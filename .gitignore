@@ -1,0 +1,27 @@
+# ---- build / Python artifacts ----
+venv-win/
+venv-mac/
+venv-lnx/
+venv/
+.venv/
+base/
+build/
+dist/
+*.spec
+__pycache__/
+*.pyc
+*.pyo
+temp_icon.ico
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ---- local user data (never publish personal config / downloaded songs) ----
+config.json
+Midis/
+*.mid
+*.midi
+*.log
