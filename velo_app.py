@@ -385,6 +385,30 @@ class Api:
             pass
 
     def maximize(self):
+        # Toggle on the native WinForms window's REAL state, so it stays in sync
+        # even if the user maximized/restored via a titlebar double-click. Set
+        # MaximizedBounds to the work area so a frameless maximize doesn't cover
+        # the taskbar.
+        try:
+            from System.Windows.Forms import FormWindowState, Screen
+            from System import Action
+            native = WINDOW.native
+
+            def toggle():
+                if native.WindowState == FormWindowState.Maximized:
+                    native.WindowState = FormWindowState.Normal
+                else:
+                    try:
+                        native.MaximizedBounds = Screen.FromControl(native).WorkingArea
+                    except Exception:
+                        pass
+                    native.WindowState = FormWindowState.Maximized
+
+            native.BeginInvoke(Action(toggle))
+            return
+        except Exception:
+            pass
+        # fallback: pywebview's own API
         try:
             if getattr(self, "_maximized", False):
                 WINDOW.restore()

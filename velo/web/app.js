@@ -1377,13 +1377,15 @@
     if (n === undefined || freeHeld[code] !== undefined) return;
     e.preventDefault();
     prPlayNote(n); freeHeld[code] = n;
-    startTrail(code, n);   // also lights the key (kept lit until the trail fades)
+    const k = prKeyEls[n]; if (k) k.classList.add("hit");   // lit only while held
+    startTrail(code, n);
   }
 
   function onFreeKeyUp(e) {
     const n = freeHeld[e.code];
     if (n === undefined) return;
     delete freeHeld[e.code];
+    if (!noteHeld(n)) { const k = prKeyEls[n]; if (k) k.classList.remove("hit"); }
     releaseTrail(e.code);
   }
 
@@ -1394,28 +1396,44 @@
   let freeRaf = 0, trailSeq = 0;
   const TRAIL_PPS = 230;          // pixels/second the ribbon grows & rises
 
-  function litElseWhere(note, exceptId) {
-    let found = false;
-    freeTrails.forEach((o, k) => { if (k !== exceptId && o.note === note) found = true; });
-    return found;
+  function noteHeld(note) {            // is this note still physically held down?
+    for (const k in freeHeld) if (freeHeld[k] === note) return true;
+    return false;
   }
 
   // Each press spawns its OWN trail (so tapping a key twice makes two ribbons);
   // srcId just lets the matching key-up release the right one.
-  function startTrail(srcId, note) {
-    if (prMode !== "free" || prNoteX[note] == null) return;
-    const track = $("#prTrack"); if (!track) return;
+  function createTrailEl(note) {
+    const track = $("#prTrack"); if (!track) return null;
     const sharp = isSharp(note);
     const el = document.createElement("div");
     el.className = "free-trail" + (sharp ? " sharp" : "");
     el.style.left = prNoteX[note] + "px";
     el.style.width = Math.round((sharp ? prWhiteW * 0.62 : prWhiteW) * 0.74) + "px";
-    el.style.height = "0px"; el.style.bottom = "0px";
+    el.style.bottom = "0px";
     track.appendChild(el);
+    return el;
+  }
+
+  function startTrail(srcId, note) {
+    if (prMode !== "free" || prNoteX[note] == null) return;
+    const el = createTrailEl(note); if (!el) return;
+    el.style.height = "0px";
     const tid = ++trailSeq;
     freeTrails.set(tid, { el, note, t0: performance.now(), held: true, relAt: 0, len: 0 });
     freeKeyTrail[srcId] = tid;
-    const k = prKeyEls[note]; if (k) k.classList.add("hit");
+    if (!freeRaf) freeRaf = requestAnimationFrame(trailAnim);
+  }
+
+  // A self-contained ribbon already in the "released" state with a fixed length
+  // — used for keys the cursor sweeps past during a fast glissando, so each one
+  // still shows a visible trail instead of a near-zero blip.
+  function spawnReleasedTrail(note, len) {
+    if (prMode !== "free" || prNoteX[note] == null) return;
+    const el = createTrailEl(note); if (!el) return;
+    el.style.height = len + "px";
+    const now = performance.now();
+    freeTrails.set(++trailSeq, { el, note, t0: now, held: false, relAt: now, len });
     if (!freeRaf) freeRaf = requestAnimationFrame(trailAnim);
   }
 
@@ -1430,9 +1448,8 @@
   function dropTrail(id, tr) {
     tr.el.remove();
     freeTrails.delete(id);
-    if (!litElseWhere(tr.note, id)) {   // unlight the key only when its last trail is gone
-      const k = prKeyEls[tr.note]; if (k) k.classList.remove("hit");
-    }
+    // safety net: if a key-up was ever missed, unlight the key once its trail ends
+    if (!noteHeld(tr.note)) { const k = prKeyEls[tr.note]; if (k) k.classList.remove("hit"); }
   }
 
   function clearFreeTrails() {
@@ -2012,14 +2029,63 @@
 
     document.addEventListener("keydown", onPracticeKey, true);
     document.addEventListener("keyup", (e) => { if (prMode === "free" && prRunning) onFreeKeyUp(e); }, true);
+    // Free-play mouse: click a key to play it, or hold and DRAG across keys to
+    // glide (glissando) — each key the cursor enters plays automatically.
     const ppiano = $("#prPiano");
-    if (ppiano) ppiano.addEventListener("pointerdown", (e) => {
-      if (prMode !== "free" || !prRunning) return;
-      const key = e.target.closest(".pk"); if (!key) return;
-      const n = parseInt(key.dataset.note, 10); if (isNaN(n)) return;
-      prPlayNote(n); startTrail("mouse", n);
-      window.addEventListener("pointerup", () => releaseTrail("mouse"), { once: true });
-    });
+    if (ppiano) {
+      let glissNote = null;
+      const noteAt = (e) => {
+        const el = document.elementFromPoint(e.clientX, e.clientY);
+        const k = el && el.closest ? el.closest(".pk") : null;
+        if (!k) return null;
+        const n = parseInt(k.dataset.note, 10);
+        return isNaN(n) ? null : n;
+      };
+      const leaveKey = (n) => {
+        if (n == null) return;
+        if (!noteHeld(n)) { const pk = prKeyEls[n]; if (pk) pk.classList.remove("hit"); }
+        releaseTrail("mouse");
+      };
+      // a quick blip for keys the cursor swept past between two move events
+      const tapNote = (n) => {
+        if (prNoteX[n] == null) return;
+        prPlayNote(n);
+        const pk = prKeyEls[n];
+        if (pk) { pk.classList.add("hit"); setTimeout(() => { if (!noteHeld(n)) pk.classList.remove("hit"); }, 150); }
+        spawnReleasedTrail(n, 64);   // a visible ribbon for the swept key
+      };
+      const setGliss = (n) => {
+        if (n === glissNote) return;
+        // fill in keys skipped between the last and new position — but only of
+        // the SAME row the cursor is sweeping (white→whites), so a glide along
+        // the white keys doesn't also fire every sharp in between.
+        if (glissNote != null && n != null && Math.abs(n - glissNote) <= 40) {
+          const step = n > glissNote ? 1 : -1;
+          for (let m = glissNote + step; m !== n; m += step) {
+            if (isSharp(m) === isSharp(n)) tapNote(m);
+          }
+        }
+        leaveKey(glissNote);
+        glissNote = n;
+        if (n != null) {
+          prPlayNote(n);
+          const pk = prKeyEls[n]; if (pk) pk.classList.add("hit");
+          startTrail("mouse", n);
+        }
+      };
+      const onMove = (e) => { if (prMode === "free" && prRunning) setGliss(noteAt(e)); };
+      const endGliss = () => {
+        leaveKey(glissNote); glissNote = null;
+        window.removeEventListener("pointermove", onMove);
+      };
+      ppiano.addEventListener("pointerdown", (e) => {
+        if (prMode !== "free" || !prRunning) return;
+        const n = noteAt(e); if (n == null) return;
+        setGliss(n);
+        window.addEventListener("pointermove", onMove);
+        window.addEventListener("pointerup", endGliss, { once: true });
+      });
+    }
 
     // F11 toggles real OS fullscreen (covers the taskbar) — great for streaming.
     document.addEventListener("keydown", (e) => {
@@ -2153,9 +2219,7 @@
     setupDragDrop();
     call("getState").then(() => {
       setMode(state && state.options && state.options.useMIDIOutput ? "midi" : "qwerty", false);
-      const lv = (state && state.lastView) || "player";
-      if (lv && lv !== "player") switchView(lv);
-      hideSplash();
+      hideSplash();   // always start on the Player (the home tab)
     });
     setTimeout(hideSplash, 3000);
   }
