@@ -3,105 +3,101 @@
 </p>
 
 <p align="center">
-  <strong>Um player de MIDI clean — com estúdio de treino e modo palco.</strong><br/>
-  Toca MIDI convertendo em teclas (pra tocar em pianos virtuais de jogos) ou em saída MIDI.
+  <strong>A clean MIDI player — with a practice studio and stage mode.</strong><br/>
+  Plays MIDI by converting it to keystrokes (for virtual pianos in games) or to MIDI output.
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/plataforma-Windows%2010%2F11-1c1c23?style=flat-square" />
-  <img src="https://img.shields.io/badge/versão-v1.0-c8ff4d?style=flat-square&labelColor=1c1c23" />
-  <img src="https://img.shields.io/badge/licença-GPL%20v3-c8ff4d?style=flat-square&labelColor=1c1c23" />
-  <img src="https://img.shields.io/badge/feito%20por-brenu-1c1c23?style=flat-square" />
+  <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-1c1c23?style=flat-square" />
+  <img src="https://img.shields.io/badge/version-v1.0-c8ff4d?style=flat-square&labelColor=1c1c23" />
+  <img src="https://img.shields.io/badge/license-GPL%20v3-c8ff4d?style=flat-square&labelColor=1c1c23" />
+  <img src="https://img.shields.io/badge/made%20by-brenu-1c1c23?style=flat-square" />
 </p>
 
 ---
 
-O **Velo** nasceu de uma vontade simples: tocar MIDI numa interface que não tivesse cara de software de 2009. Player limpo, biblioteca de músicas online, um modo de treino que parece um joguinho, e um modo palco pra deixar bonito na stream. Sem firula, sem instalação chata — abre e funciona.
+**Velo** started from a simple itch: play MIDI in an interface that doesn't look like 2009 software. A clean player, an online song library, a practice mode that feels like a little game, and a stage mode to look good on stream. No bloat, no annoying install — open it and it works.
 
-<p align="center">
-  <em>📸 (coloque aqui um print do app — ex.: <code>docs/screenshot.png</code>)</em>
-</p>
+## ✨ What it does
 
-## ✨ O que ele faz
+- 🎹 **Player** — plays MIDI via **keyboard (QWERTY)** or **MIDI output**. Song queue, speed control, previous/next, and **global hotkeys** that work even with the app in the background.
+- 🎯 **Practice** — three modes on a 61-key piano that lights up which key to press:
+  - **Step** — learn note by note, at your own pace. Miss it? It waits until you get it right.
+  - **Rhythm** — turns into a rhythm game: notes fall in time, with **Perfect / Good / Miss**, combo, multiplier and a life bar.
+  - **Free play** — a free piano (keyboard or mouse), with **rising trails** on every note and a **preview** that plays the song for you.
+  - **Section trainer** — pick the hard part and drill it in **slow motion that speeds up** as you nail it.
+- 🌐 **MIDI Hub** — download songs straight from **BitMidi** (thousands of files), with search and paging.
+- ▦ **Stage mode** — notes fall onto a **fullscreen** piano, synced to what's playing. Perfect to leave on screen for Discord/streaming.
+- 🥁 **Drums** and ⌨️ **MIDI → Keys** — turn a MIDI controller into a keyboard in real time.
+- 🔊 **Real sound** — several **piano** models (Grand, Bright, Electric…) plus a **Cherry MX** mechanical-keyboard sound.
+- 🏆 **Records** per song · 🖥️ **responsive** layout + **fullscreen (F11)**.
 
-- 🎹 **Player** — toca MIDI via **teclado (QWERTY)** ou **saída MIDI**. Fila de músicas, controle de velocidade, anterior/próxima, e **atalhos globais** que funcionam até com o app em segundo plano.
-- 🎯 **Treino** — três modos num teclado de 61 teclas que mostra qual tecla apertar:
-  - **Step** — aprende nota por nota, no seu ritmo. Errou? Trava até você acertar.
-  - **Rhythm** — vira jogo de ritmo: as notas caem no tempo da música, com **Perfect / Good / Miss**, combo, multiplicador e barra de vida.
-  - **Free play** — piano livre (teclado ou mouse), com **rastros subindo** a cada nota e **preview** da música tocando sozinha.
-  - **Treinador de trecho** — escolhe o pedaço difícil e treina em **câmera lenta que acelera** conforme você acerta.
-- 🌐 **MIDI Hub** — baixa músicas direto do **BitMidi** (milhares de arquivos), busca e paginação.
-- ▦ **Modo Palco** — as notas caem num piano em **tela cheia**, sincronizadas com o que toca. Perfeito pra deixar na tela no Discord/stream.
-- 🥁 **Drums** e ⌨️ **MIDI → Teclas** — controlador MIDI vira teclado em tempo real.
-- 🔊 **Som de verdade** — vários modelos de **piano** (Grand, Bright, Electric…) e som de **teclado mecânico Cherry MX**.
-- 🏆 **Recordes** por música · 🖥️ layout **responsivo** + **fullscreen (F11)**.
+## ⬇️ Download (ready to use)
 
-## ⬇️ Baixar (pronto pra usar)
+> No Python, nothing to install.
 
-> Não precisa de Python nem instalar nada.
+1. Go to **[Releases](../../releases)** and download `Velo-win.zip`.
+2. Extract the folder anywhere.
+3. Open **`Velo.exe`**.
 
-1. Vai em **[Releases](../../releases)** e baixa o `Velo-win.zip`.
-2. Extrai a pasta onde quiser.
-3. Abre o **`Velo.exe`**.
+Requires **Windows 10/11** with the **WebView2 Runtime** (already bundled in up-to-date Windows; if missing, Windows Update installs it, or grab it free from Microsoft).
 
-Requer **Windows 10/11** com o **WebView2 Runtime** (já vem instalado no Windows atualizado; se faltar, o Windows Update resolve ou baixa de graça na Microsoft).
+## ⌨️ Global hotkeys
 
-## ⌨️ Atalhos globais
+| Key  | Action |
+|:----:|--------|
+| `F1` | Play / Pause |
+| `F2` | Pause |
+| `F3` | Stop |
+| `F4` | Speed up |
+| `F5` | Slow down |
+| `F6` | Previous track |
+| `F7` | Next track |
 
-| Tecla | Ação |
-|:-----:|------|
-| `F1`  | Play / Pause |
-| `F2`  | Pause |
-| `F3`  | Stop |
-| `F4`  | Aumentar velocidade |
-| `F5`  | Diminuir velocidade |
-| `F6`  | Música anterior |
-| `F7`  | Próxima música |
+You can remap any of them in **Settings**. They work even when Velo is minimized — handy for controlling it while you're in a game.
 
-Dá pra trocar qualquer atalho em **Settings**. Eles funcionam mesmo com o Velo minimizado — ideal pra controlar enquanto você está num jogo.
+## 🧭 How to use
 
-## 🧭 Como usar
+### 1. Play a song
+1. **Player** tab → **Open** (or drag a `.mid` onto the window).
+2. **Play** (or `F1`). Velo "types" the song into your virtual piano keys.
+3. Want to play in a game (Roblox, etc.)? Keep the game focused and use the hotkeys — the keystrokes go to it.
 
-### 1. Tocar uma música
-1. Aba **Player** → **Open** (ou arraste um `.mid` pra janela).
-2. **Play** (ou `F1`). O Velo "digita" a música nas teclas do seu piano virtual.
-3. Quer tocar num jogo (Roblox, etc.)? Deixa o jogo em foco e use os atalhos — as teclas vão pra ele.
+> **QWERTY vs MIDI Output:** choose at the top of the Player. *QWERTY* simulates the keyboard (for in-game pianos). *MIDI Output* sends to an instrument/DAW via a MIDI port.
 
-> **QWERTY x MIDI Output:** no topo do Player você escolhe. *QWERTY* simula o teclado (pra pianos de jogos). *MIDI Output* manda pra um instrumento/DAW via porta MIDI.
+### 2. Download songs (MIDI Hub)
+1. **MIDI Hub** tab → search by name.
+2. Click the ↓ on a song — it downloads and drops straight into your queue.
 
-### 2. Baixar músicas (MIDI Hub)
-1. Aba **MIDI Hub** → busca pelo nome.
-2. Clica no ↓ de uma música — ela baixa e já entra na sua fila.
+### 3. Practice
+1. **Practice** tab → pick a mode (**Step / Rhythm / Free play**) and a song.
+2. The on-screen keyboard lights up the right keys (sharps = **Shift**).
+   - **Step:** press in sequence, no rush.
+   - **Rhythm:** hit each note as it reaches the line.
+   - **Free play:** play freely; pick a song and hit **Play (preview)** to watch it play itself.
+3. **Section trainer:** toggle it on and drag the handles to drill just one part, slowly.
 
-### 3. Treinar
-1. Aba **Practice** → escolhe o modo (**Step / Rhythm / Free play**) e a música.
-2. O teclado na tela acende as teclas certas (sustenidos = **Shift**).
-   - **Step:** aperta na sequência, sem pressa.
-   - **Rhythm:** acerta no tempo em que a nota chega na linha.
-   - **Free play:** toca livre; escolhe uma música e dá **Play (preview)** pra assistir tocando sozinha.
-3. **Treinador de trecho:** liga o *Section trainer* e arrasta os limites pra treinar só um pedaço, devagar.
+### 4. Stage mode (visualizer)
+On the **Player**, click **Stage** (or `F11` for fullscreen). Hit play on a song and the notes fall onto the piano, in sync — great for streaming.
 
-### 4. Modo Palco (visualizer)
-No **Player**, clique em **Stage** (ou `F11` pra tela cheia). Dá play numa música e as notas caem no piano, sincronizadas — bonito pra stream.
+### 5. 🎙️ Sound like you're playing live (Discord / stream)
+The idea: route Velo's piano sound into your virtual "microphone".
 
-### 5. 🎙️ Soar como se estivesse tocando ao vivo (Discord / stream)
-A ideia: rotear o som do piano do Velo pro seu "microfone" virtual.
+1. Install **[VB-CABLE](https://vb-audio.com/Cable/)** (a free virtual audio cable).
+2. In Windows, under **Settings → System → Sound → Volume mixer**, send **Velo**'s output to **`CABLE Input`**.
+3. In **Discord / OBS**, pick the microphone **`CABLE Output`**.
+4. In Velo, under **Settings → Sound**, turn the sound on (piano or keyboard) and hit play.
+5. Done — whoever's listening hears the piano as if it were you playing.
 
-1. Instale o **[VB-CABLE](https://vb-audio.com/Cable/)** (cabo de áudio virtual, grátis).
-2. No Windows, em **Configurações → Sistema → Som → Mixer de volume**, mande a saída do **Velo** para **`CABLE Input`**.
-3. No **Discord / OBS**, escolha o microfone **`CABLE Output`**.
-4. No Velo, em **Settings → Sound**, ligue o som (piano ou teclado) e dê o play.
-5. Pronto — quem te ouve recebe o piano como se fosse você tocando.
+> Want to **talk and play at the same time**? Use **VoiceMeeter** to mix your real mic + Velo's audio into one channel.
 
-> Quer **falar e tocar ao mesmo tempo**? Use o **VoiceMeeter** pra misturar seu microfone real + o áudio do Velo num só canal.
+### 6. Drums and MIDI → Keys
+- **Drums:** same idea as the Player, with a drum map.
+- **MIDI → Keys:** plug in a MIDI controller and play — Velo converts it to keystrokes in real time.
 
-### 6. Drums e MIDI → Teclas
-- **Drums:** mesma lógica do Player, com mapa de bateria.
-- **MIDI → Teclas:** conecte um controlador MIDI e toque — o Velo converte pra teclas em tempo real.
+## 🛠️ Run from source
 
-## 🛠️ Rodar do código-fonte
-
-Pré-requisitos: **Python 3.12** (Windows) e o **WebView2 Runtime**.
+Requirements: **Python 3.12** (Windows) and the **WebView2 Runtime**.
 
 ```bash
 python -m venv venv-win
@@ -110,23 +106,23 @@ pip install -r requirements.txt
 python velo_app.py
 ```
 
-Pra gerar o `.exe` (build com PyInstaller, sem cara de falso-positivo):
+To build the `.exe` (PyInstaller, anti-false-positive setup):
 
 ```bash
 scripts\build-velo-win.bat
 ```
 
-O app sai em `dist\Velo\Velo.exe`.
+The app lands in `dist\Velo\Velo.exe`.
 
-## 🙏 Créditos & Licença
+## 🙏 Credits & License
 
-**Velo** — criado por **brenu** · [github.com/brenucode](https://github.com/brenucode)
+**Velo** — created by **brenu** · [github.com/brenucode](https://github.com/brenucode)
 Copyright © 2026 brenu.
 
-Distribuído sob a **GNU General Public License v3.0** (veja [LICENSE](LICENSE)).
+Released under the **GNU General Public License v3.0** (see [LICENSE](LICENSE)).
 
-Construído sobre o motor de reprodução do **[nanoMIDIPlayer](https://github.com/NotHammer043/nanoMIDIPlayer)** (NotHammer043), também licenciado em GPLv3 — obrigado pela base.
+Built upon the playback engine of **[nanoMIDIPlayer](https://github.com/NotHammer043/nanoMIDIPlayer)** (NotHammer043), also licensed under GPLv3 — thanks for the base.
 
-Sons: pianos **MusyngKite** ([midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts)) e teclado **Cherry MX** ([Mechvibes](https://github.com/hainguyents13/mechvibes)).
+Sounds: **MusyngKite** pianos ([midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts)) and the **Cherry MX** keyboard ([Mechvibes](https://github.com/hainguyents13/mechvibes)).
 
-<p align="center"><sub>feito no tempo livre — porque nem todo projeto precisa de justificativa.</sub></p>
+<p align="center"><sub>built in my spare time — because not every project needs a reason.</sub></p>
