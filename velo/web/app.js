@@ -445,12 +445,13 @@
 
   // ---------- MIDI Hub ----------
   let hubData = [], hubFiltered = [], hubPage = 1, hubLoaded = false;
-  let hubSource = "bitmidi";
+  let hubSource = "nanomidi";
   let bitQuery = "", bitPage = 0, bitTotal = 0, bitPageSize = 15;
   const HUB_PAGE_SIZE = 12;
 
   function loadHub() {
     if (hubSource === "bitmidi") { loadBit($("#hubSearch").value); return; }
+    if (hubSource === "onlineseq") { loadOnlineSeq($("#hubSearch").value); return; }
     // nanoMIDI (Python backend) — works only when their server is up
     hubLoaded = true;
     const a = api();
@@ -505,6 +506,39 @@
     });
   }
 
+  // Online Sequencer: the whole site is behind Cloudflare, so the Python side
+  // drives a hidden, challenge-cleared WebView2 to fetch + parse results and to
+  // run the site's own exportMidi() on download. First search waits for the
+  // challenge to clear (~10s); after that it's quick.
+  function loadOnlineSeq(query) {
+    hubLoaded = true;
+    const a = api();
+    if (!a || !a.osSearch) { showHubState('<p>Online Sequencer unavailable.</p>'); return; }
+    showHubState('<div class="spinner"></div><p>Reaching Online Sequencer…\n<small style="opacity:.6">first search clears a one-time check, give it a few seconds</small></p>');
+    a.osSearch((query || "").trim()).then((res) => {
+      if (!res || !res.ok) {
+        const msg = res && res.needWindow
+          ? "Couldn't get past Online Sequencer's check automatically.\nA window may have opened — solve it once, then try again."
+          : "Couldn't reach Online Sequencer right now.\nTry again in a moment.";
+        showHubState('<p>' + esc(msg).replace(/\n/g, "<br>") + '</p><button class="btn" id="hubRetry" style="margin-top:4px">Try again</button>');
+        const rb = document.getElementById("hubRetry"); if (rb) rb.addEventListener("click", loadHub);
+        return;
+      }
+      hubData = (res.items || []).map((x) => ({
+        id: x.id,
+        name: cleanName(x.title) || ("Sequence " + x.id),
+        artists: "Online Sequencer",
+        arranger: "",
+        downloads: 0,
+        notes: x.notes || "",
+        image: "",
+        source: "onlineseq",
+      }));
+      if (!hubData.length) { showHubState('<p>No results on Online Sequencer for "' + esc((query || "").trim() || "featured") + '".</p>'); return; }
+      hubFiltered = hubData; hubPage = 1; renderHub();
+    });
+  }
+
   function showHubState(html) {
     const s = $("#hubState");
     s.hidden = false; s.innerHTML = html;
@@ -556,12 +590,15 @@
       card.className = "hub-card";
       card.style.setProperty("--i", i);
       const extra = m.arranger ? `<span>Arr: ${esc(m.arranger)}</span>` : "";
+      const meta = m.source === "onlineseq"
+        ? (m.notes ? `<span>${esc(m.notes)}</span>` : "")
+        : `<span>↓ ${m.downloads || 0}</span>`;
       card.innerHTML =
         (m.image ? `<img class="hub-thumb" src="${esc(m.image)}" loading="lazy" alt="" onerror="this.style.visibility='hidden'"/>` : `<div class="hub-thumb"></div>`) +
         `<div class="hub-info">
            <div class="hub-name">${esc(m.name)}</div>
            <div class="hub-artist">${esc(m.artists)}</div>
-           <div class="hub-extra">${extra}<span>↓ ${m.downloads || 0}</span></div>
+           <div class="hub-extra">${extra}${meta}</div>
          </div>
          <button class="hub-dl" title="Download and load" aria-label="Download">
            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 4v11m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg>
@@ -593,6 +630,13 @@
     };
     if (m.source === "bitmidi") {
       api().hubDownloadBit(m.downloadUrl, m.name).then(done).catch(() => { btn.textContent = "!"; });
+      return;
+    }
+    if (m.source === "onlineseq") {
+      api().osDownload(m.id, m.name).then((res) => {
+        if (res && res.ok) { done(res); }
+        else { btn.textContent = "!"; btn.title = (res && res.error) || "failed"; }
+      }).catch(() => { btn.textContent = "!"; });
       return;
     }
     if (!m.midiFilename) return;
@@ -2116,13 +2160,14 @@
       clearTimeout(hubSearchTimer);
       hubSearchTimer = setTimeout(() => {
         if (hubSource === "bitmidi") loadBit($("#hubSearch").value);
+        else if (hubSource === "onlineseq") loadOnlineSeq($("#hubSearch").value);
         else applyHubFilter();
-      }, 250);
+      }, hubSource === "nanomidi" ? 250 : 400);
     });
-    $("#hubSort").addEventListener("change", () => { if (hubSource !== "bitmidi") applyHubFilter(); });
+    $("#hubSort").addEventListener("change", () => { if (hubSource === "nanomidi") applyHubFilter(); });
     $("#hubSource").addEventListener("change", (e) => {
       hubSource = e.target.value;
-      $("#hubSort").disabled = (hubSource === "bitmidi");
+      $("#hubSort").disabled = (hubSource !== "nanomidi");   // sort only applies to the nanoMIDI client-side list
       hubLoaded = false;
       loadHub();
     });

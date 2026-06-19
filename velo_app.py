@@ -30,6 +30,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from velo.backend import config as configuration
 from velo.backend import hub
+from velo.backend import onlineseq
+from velo.backend import audioname
 from velo.backend.player import Player
 from velo.backend.drums import DrumsPlayer
 from velo.backend.qwerty_input import InputController
@@ -219,6 +221,20 @@ class Api:
             return {"ok": True, "state": PLAYER.setFile(path)}
         except Exception as e:
             logger.warning(f"hubDownloadBit error: {e}")
+            return {"ok": False, "error": str(e)}
+
+    # ----- Online Sequencer (cleared via the embedded browser) -------------
+    def osSearch(self, query):
+        return onlineseq.search(query)
+
+    def osDownload(self, seqId, name=None):
+        try:
+            res = onlineseq.download(seqId, name)
+            if not res.get("ok"):
+                return res
+            return {"ok": True, "state": PLAYER.setFile(res["path"])}
+        except Exception as e:
+            logger.warning(f"osDownload error: {e}")
             return {"ok": False, "error": str(e)}
 
     # ----- practice (training mode) ----------------------------------------
@@ -440,6 +456,9 @@ class Api:
 def main():
     global WINDOW, PLAYER, DRUMS, INPUT
 
+    # taskbar + volume-mixer identity (see audioname for why this is needed)
+    audioname.setAppId("brenu.Velo.MidiPlayer")
+
     indexPath = resourcePath(os.path.join("velo", "web", "index.html"))
 
     ui = configuration.configData.get("appUI", {})
@@ -495,6 +514,12 @@ def main():
             PLAYER.bindHotkeys()
         except Exception:
             pass
+        # relabel the WebView2 audio session as "Velo" in the volume mixer
+        try:
+            iconPath = resourcePath(os.path.join("assets", "icons", "velo.ico"))
+            audioname.brand("Velo", icon=iconPath if os.path.exists(iconPath) else None)
+        except Exception:
+            pass
 
     window.events.loaded += onLoaded
 
@@ -502,6 +527,7 @@ def main():
         global SHUTTING_DOWN
         SHUTTING_DOWN = True   # silence the buses before the WebView2 tears down
         try:
+            onlineseq.shutdown()
             PLAYER.unbindHotkeys()
             if PLAYER.isRunning:
                 PLAYER.stop()

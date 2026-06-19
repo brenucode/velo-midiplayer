@@ -37,9 +37,13 @@ pyinstaller --onedir --noconsole --noconfirm ^
     --version-file=version.txt ^
     --add-data="velo\web;velo\web" ^
     --add-data="assets\defaultConfig.json;assets" ^
+    --add-data="assets\icons\velo.ico;assets\icons" ^
     --collect-all=webview ^
+    --collect-all=comtypes ^
     --hidden-import=mido.backends.rtmidi ^
     --hidden-import=clr ^
+    --hidden-import=pycaw.pycaw ^
+    --hidden-import=psutil ^
     --paths="." ^
     velo_app.py
 

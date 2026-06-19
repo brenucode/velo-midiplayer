@@ -39,7 +39,7 @@
   - **Rhythm** — turns into a rhythm game: notes fall in time, with **Perfect / Good / Miss**, combo, multiplier and a life bar.
   - **Free play** — a free piano (keyboard or mouse), with **rising trails** on every note and a **preview** that plays the song for you.
   - **Section trainer** — pick the hard part and drill it in **slow motion that speeds up** as you nail it.
-- 🌐 **MIDI Hub** — download songs straight from **BitMidi** (thousands of files), with search and paging.
+- 🌐 **MIDI Hub** — search and download songs from three libraries without leaving Velo: the **nanoMIDI** library, **Online Sequencer**, and **BitMidi**. Pick the source from the dropdown; results show up in Velo's own UI.
 - ▦ **Stage mode** — notes fall onto a **fullscreen** piano, synced to what's playing. Perfect to leave on screen for Discord/streaming.
 - 🥁 **Drums** and ⌨️ **MIDI → Keys** — turn a MIDI controller into a keyboard in real time.
 - 🔊 **Real sound** — several **piano** models (Grand, Bright, Electric…) plus a **Cherry MX** mechanical-keyboard sound.
@@ -79,8 +79,10 @@ You can remap any of them in **Settings**. They work even when Velo is minimized
 > **QWERTY vs MIDI Output:** choose at the top of the Player. *QWERTY* simulates the keyboard (for in-game pianos). *MIDI Output* sends to an instrument/DAW via a MIDI port.
 
 ### 2. Download songs (MIDI Hub)
-1. **MIDI Hub** tab → search by name.
+1. **MIDI Hub** tab → pick a source (**nanoMIDI**, **Online Sequencer** or **BitMidi**) and search by name.
 2. Click the ↓ on a song — it downloads and drops straight into your queue.
+
+> **Online Sequencer:** the first search opens a one-time check in a small window (it usually clears itself in a few seconds); after that, searching and downloading happen entirely inside Velo.
 
 ### 3. Practice
 1. **Practice** tab → pick a mode (**Step / Rhythm / Free play**) and a song.
@@ -137,5 +139,7 @@ Released under the **GNU General Public License v3.0** (see [LICENSE](LICENSE)).
 Built upon the playback engine of **[nanoMIDIPlayer](https://github.com/NotHammer043/nanoMIDIPlayer)** (NotHammer043), also licensed under GPLv3 — thanks for the base.
 
 Sounds: **MusyngKite** pianos ([midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts)) and the **Cherry MX** keyboard ([Mechvibes](https://github.com/hainguyents13/mechvibes)).
+
+Song libraries in the MIDI Hub belong to their respective services — **nanoMIDI** ([nanomidi.net](https://nanomidi.net)), **[Online Sequencer](https://onlinesequencer.net)** and **[BitMidi](https://bitmidi.com)**. Velo just gives you a tidy way to search them; all rights stay with them and their uploaders.
 
 <p align="center"><sub>built in my spare time — because not every project needs a reason.</sub></p>
