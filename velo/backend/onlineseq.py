@@ -81,28 +81,23 @@ def _ensure_window():
     return _WIN
 
 
-def _await_clear(hard_timeout=90):
-    """Return True once Cloudflare is cleared.
+def _await_clear(hard_timeout=90, reveal_after=45):
+    """Return True once Cloudflare is cleared, staying invisible.
 
-    A *hidden* WebView2 has its timers throttled by Chromium, which can stall
-    the challenge JS — so we only reveal the window while a challenge is
-    actually present (first load, or after the clearance cookie expires), and
-    hide it again the moment the page is cleared. Once the session is cleared,
-    later calls see no challenge and the window never appears."""
+    With Chromium's background throttling disabled (see the WebView2 flags set
+    in velo_app), a *hidden* window keeps running the challenge JS and clears
+    on its own in ~20s — so the helper never has to appear. As a last resort,
+    if a rare *interactive* challenge stalls past ``reveal_after`` seconds, we
+    surface the window so the user can solve it, then hide it again."""
     try:
         if not _challenged(_WIN.evaluate_js("document.title")):
-            return True   # already cleared — stay invisible
+            return True   # already cleared
     except Exception:
         pass
 
-    # challenge present: show the window so the challenge JS runs unthrottled
-    # (and so the user can solve it if it's the interactive kind)
-    try:
-        _WIN.show()
-    except Exception:
-        pass
+    shown = False
     cleared = False
-    for _ in range(hard_timeout):
+    for i in range(hard_timeout):
         try:
             title = _WIN.evaluate_js("document.title")
         except Exception:
@@ -110,11 +105,18 @@ def _await_clear(hard_timeout=90):
         if not _challenged(title):
             cleared = True
             break
+        if i >= reveal_after and not shown:   # stuck → likely needs a human click
+            try:
+                _WIN.show()
+            except Exception:
+                pass
+            shown = True
         time.sleep(1)
-    try:
-        _WIN.hide()
-    except Exception:
-        pass
+    if shown:
+        try:
+            _WIN.hide()
+        except Exception:
+            pass
     return cleared
 
 

@@ -24,6 +24,18 @@ import json
 import base64
 import logging
 
+# Keep WebView2 timers/rendering alive even when a window is hidden or occluded.
+# This lets the Online Sequencer helper window clear its Cloudflare check while
+# staying completely invisible (a throttled hidden window never solves it), and
+# keeps the main window's playback loops smooth while running in the background.
+# Must be set before any WebView2 starts.
+os.environ.setdefault(
+    "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
+    "--disable-background-timer-throttling "
+    "--disable-backgrounding-occluded-windows "
+    "--disable-renderer-backgrounding",
+)
+
 import webview
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

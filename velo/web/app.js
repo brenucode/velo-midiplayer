@@ -514,7 +514,7 @@
     hubLoaded = true;
     const a = api();
     if (!a || !a.osSearch) { showHubState('<p>Online Sequencer unavailable.</p>'); return; }
-    showHubState('<div class="spinner"></div><p>Reaching Online Sequencer…\n<small style="opacity:.6">first search clears a one-time check, give it a few seconds</small></p>');
+    showHubState('<div class="spinner"></div><p>Reaching Online Sequencer…\n<small style="opacity:.6">the first search runs a one-time check in the background (~15s); after that it\'s instant</small></p>');
     a.osSearch((query || "").trim()).then((res) => {
       if (!res || !res.ok) {
         const msg = res && res.needWindow
