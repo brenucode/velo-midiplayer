@@ -42,6 +42,35 @@ def resourcePath(relativePath):
     return os.path.join(base, relativePath)
 
 
+def _unblockSelf():
+    """Strip Windows' "mark of the web" from our own bundled files.
+
+    Files extracted from a downloaded .zip inherit a ``Zone.Identifier``
+    stream; the .NET Framework then refuses to load our pythonnet assemblies
+    (``Python.Runtime.dll``) — which is what drives the WebView2 window — and
+    the app dies at launch with "Failed to resolve Python.Runtime.Loader…".
+    Deleting that stream at startup, *before* pywebview imports clr, lets a
+    freshly downloaded copy run without the user having to right-click the zip
+    and choose "Unblock". We sweep the whole bundle (not just pythonnet) so the
+    WebView2 .NET assemblies are cleared too. No sentinel on disk — a stray one
+    could ship inside the zip and silently disable the fix; the sweep is a few
+    milliseconds, so we just run it every launch."""
+    base = getattr(sys, "_MEIPASS", None)
+    if not base or os.name != "nt":
+        return
+    try:
+        import ctypes
+        deleteFile = ctypes.windll.kernel32.DeleteFileW
+        for root, _dirs, files in os.walk(base):
+            for name in files:
+                try:
+                    deleteFile(os.path.join(root, name) + ":Zone.Identifier")
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("velo")
 
@@ -455,6 +484,10 @@ class Api:
 
 def main():
     global WINDOW, PLAYER, DRUMS, INPUT
+
+    # remove the "downloaded from the internet" mark from our own files so the
+    # .NET/pythonnet bridge loads on a fresh download (must run before start())
+    _unblockSelf()
 
     # taskbar + volume-mixer identity (see audioname for why this is needed)
     audioname.setAppId("brenu.Velo.MidiPlayer")

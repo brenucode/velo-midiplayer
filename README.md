@@ -55,6 +55,17 @@
 
 Requires **Windows 10/11** with the **WebView2 Runtime** (already bundled in up-to-date Windows; if missing, Windows Update installs it, or grab it free from Microsoft).
 
+<details>
+<summary><b>It won't start? (rare)</b></summary>
+
+Velo automatically removes the "downloaded from the internet" mark from its own files on first launch, so it should just work. If it still won't open:
+
+- **Antivirus quarantined a file** — Velo is an unsigned app, so some antivirus tools remove a file by mistake. Check that `Velo\_internal\pythonnet\runtime\Python.Runtime.dll` still exists; if it's gone, restore it from quarantine and add the Velo folder as an exception.
+- **Still blocked** — right-click `Velo-win.zip` → **Properties** → tick **Unblock** → **OK**, then extract again.
+- **Missing .NET Framework** — on stripped Windows editions (N / LTSC), install the free **.NET Framework 4.8** from Microsoft.
+
+</details>
+
 ## ⌨️ Global hotkeys
 
 | Key  | Action |
