@@ -44,6 +44,26 @@
     t.hidden = false;
   }
 
+  // Keep the Creator avatar in sync with the live Discord profile picture.
+  // Discord's CDN needs the current avatar *hash* (which changes when you swap
+  // your pic); we resolve it by user id through Lanyard (no bot/token). Needs
+  // the account to be a member of discord.gg/lanyard; otherwise the static
+  // image stays as a fallback.
+  function refreshDiscordAvatar() {
+    const img = document.getElementById("creditAvatar");
+    if (!img || !img.dataset.discord) return;
+    const id = img.dataset.discord;
+    fetch("https://api.lanyard.rest/v1/users/" + id)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const u = d && d.success && d.data && d.data.discord_user;
+        if (!u || !u.avatar) return;
+        const ext = String(u.avatar).startsWith("a_") ? "gif" : "png";
+        img.src = "https://cdn.discordapp.com/avatars/" + id + "/" + u.avatar + "." + ext + "?size=160";
+      })
+      .catch(() => {});
+  }
+
   // ---------- SOUND (mic illusion) ----------
   let soundOn = false, soundMode = "piano", soundVol = 70;
   let audioCtx = null, masterGain = null, piano = null;
@@ -2350,6 +2370,7 @@
   function init() {
     bind();
     setupDragDrop();
+    refreshDiscordAvatar();
     call("getState").then(() => {
       setMode(state && state.options && state.options.useMIDIOutput ? "midi" : "qwerty", false);
       hideSplash();   // always start on the Player (the home tab)
