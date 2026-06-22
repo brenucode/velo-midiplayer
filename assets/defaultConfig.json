@@ -22,10 +22,7 @@
       "transpose": 5.0
     },
     "humanize": {
-      "enabled": false,
-      "timing": 18,
-      "velocity": 12,
-      "chord": 14
+      "amount": 0
     },
     "pianoMap": {
       "88keyMap": {

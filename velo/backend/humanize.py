@@ -2,50 +2,59 @@
 
 A real player never hits or releases the notes of a chord at the exact same
 millisecond, and never plays two notes with identical force. MIDI playback,
-being mathematically perfect, sounds mechanical. This module adds three small,
-controllable imperfections — all gated by a single ``enabled`` toggle:
+being mathematically perfect, sounds mechanical. This module adds three small
+imperfections, all driven by a single **amount** knob (0-100):
 
-* **timing**   — random jitter (± ms) on every note's onset *and* release, so
-  nothing lands dead on the grid.
-* **chord**    — a tiny progressive offset across notes that fall on the same
-  beat (onsets *and* releases), so chords "roll" like real fingers instead of
-  snapping together.
-* **velocity** — random ± % on each note's force (affects MIDI-out volume and
-  the in-app piano sound; QWERTY keystrokes have no force, so there only the
+* **timing**   — random jitter (± ms) on every note's onset *and* release.
+* **chord**    — a tiny progressive offset across notes on the same beat
+  (onsets *and* releases), so chords "roll" instead of snapping together.
+* **velocity** — random ± % on each note's force (MIDI-out volume and the
+  in-app piano sound; QWERTY keystrokes have no force, so there only the
   timing/chord parts apply).
 
-Offsets are applied per note and never accumulated into the song clock, so the
-overall tempo never drifts — each note just breathes a little around its true
-position.
+One slider scales all three together along a calibrated curve — 0 is the exact
+mechanical original, 100 is loose/expressive. Offsets are applied per note and
+never accumulated into the song clock, so the overall tempo never drifts: each
+note just breathes a little around its true position.
 """
 
 import random
 
 from velo.backend import config as configuration
 
-_DEFAULT = {"enabled": False, "timing": 18, "velocity": 12, "chord": 14}
+DEFAULT_AMOUNT = 45
+
+# the three effects at full strength (amount = 100); everything below scales
+# linearly from these
+_MAX_TIMING_MS = 35.0
+_MAX_CHORD_MS = 30.0
+_MAX_VELOCITY_PCT = 22.0
 
 
-def getConfig():
+def amount():
+    """The single 0-100 humanize knob (0 = off)."""
     h = configuration.configData.get("midiPlayer", {}).get("humanize")
     if not isinstance(h, dict):
-        return dict(_DEFAULT)
-    return h
-
-
-def _num(h, key):
+        return 0.0
     try:
-        return max(0.0, float(h.get(key, 0)))
+        return max(0.0, min(100.0, float(h.get("amount", 0))))
     except Exception:
         return 0.0
 
 
+def _params():
+    """(timing_seconds, chord_seconds, velocity_percent) for the current knob."""
+    frac = amount() / 100.0
+    return (_MAX_TIMING_MS * frac / 1000.0,
+            _MAX_CHORD_MS * frac / 1000.0,
+            _MAX_VELOCITY_PCT * frac)
+
+
 def jitterVelocity(velocity):
     """Return ``velocity`` nudged by a random ± percentage (clamped 1..127)."""
-    h = getConfig()
-    if not h.get("enabled") or velocity <= 0:
+    if velocity <= 0:
         return velocity
-    pct = _num(h, "velocity")
+    pct = _params()[2]
     if pct <= 0:
         return velocity
     factor = 1.0 + random.uniform(-pct / 100.0, pct / 100.0)
@@ -61,15 +70,12 @@ class Humanizer:
 
     def offset(self, msg):
         """Seconds to add to this message's scheduled time (never subtracted
-        from the song clock — purely a local nudge). 0 for non-notes."""
-        h = getConfig()
-        if not h.get("enabled") or getattr(msg, "is_meta", False):
+        from the song clock — purely a local nudge). 0 for non-notes / off."""
+        if getattr(msg, "is_meta", False) or not hasattr(msg, "note"):
             return 0.0
-        if not hasattr(msg, "note"):
+        timing, chord, _ = _params()
+        if timing <= 0 and chord <= 0:
             return 0.0
-
-        timing = _num(h, "timing") / 1000.0
-        chord = _num(h, "chord") / 1000.0
 
         isOn = msg.type == "note_on" and getattr(msg, "velocity", 0) > 0
         isOff = msg.type == "note_off" or (msg.type == "note_on" and getattr(msg, "velocity", 0) == 0)

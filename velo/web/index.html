@@ -436,16 +436,12 @@
           </div>
           <div class="card humanize reveal" style="--d:2">
             <div class="card-title">Humanize — natural feel</div>
-            <div class="sound-ctl">
-              <button class="chip" id="humToggle">Off</button>
-              <span class="hk-hint" style="margin:0;flex:1;min-width:120px">Off = the exact, mechanical original.</span>
+            <div class="sound-vol">
+              <span>Amount</span>
+              <input type="range" id="humAmount" min="0" max="100" value="0" />
+              <span id="humAmountVal">Off</span>
             </div>
-            <div id="humSliders" style="margin-top:14px;display:flex;flex-direction:column;gap:13px">
-              <div class="sound-vol"><span>Timing</span><input type="range" id="humTiming" min="0" max="60" value="18" /><span id="humTimingVal">18 ms</span></div>
-              <div class="sound-vol"><span>Chord roll</span><input type="range" id="humChord" min="0" max="50" value="14" /><span id="humChordVal">14 ms</span></div>
-              <div class="sound-vol"><span>Velocity</span><input type="range" id="humVelocity" min="0" max="40" value="12" /><span id="humVelVal">12 %</span></div>
-            </div>
-            <div class="hk-hint">A real player never hits or releases a chord's notes at the exact same instant, and never plays two notes with identical force. This adds tiny random imperfections so it feels played, not computed — on both the press and the release. Higher = looser. Works for QWERTY, MIDI output and the in-app piano sound.</div>
+            <div class="hk-hint">A real player never hits or releases a chord's notes at the exact same instant, and never plays two notes with identical force. Drag this up to add that feel — note timing, chord roll and force all loosen together. <b>0 = the exact, mechanical original</b>; higher = looser. Works for QWERTY, MIDI output and the in-app piano sound.</div>
           </div>
           <div class="card about reveal" style="--d:3">
             <div class="card-title">About</div>

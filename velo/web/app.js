@@ -266,27 +266,13 @@
     if (masterGain) masterGain.gain.value = v / 100;
   }
 
-  const HUM_SLIDERS = [
-    ["#humTiming", "#humTimingVal", "timing", "ms"],
-    ["#humChord", "#humChordVal", "chord", "ms"],
-    ["#humVelocity", "#humVelVal", "velocity", "%"],
-  ];
-
   function applyHumanizeState(h) {
     if (!h) return;
-    const on = !!h.enabled;
-    const t = $("#humToggle");
-    if (t) { t.textContent = on ? "On" : "Off"; t.classList.toggle("on", on); }
-    const sl = $("#humSliders");
-    if (sl) { sl.style.opacity = on ? "1" : ".4"; sl.style.pointerEvents = on ? "" : "none"; }
-    HUM_SLIDERS.forEach(([sid, vid, key, unit]) => {
-      const el = $(sid);
-      if (el && typeof h[key] === "number") {
-        el.value = h[key];
-        el.style.setProperty("--fill", (100 * (el.value - el.min) / (el.max - el.min)) + "%");
-        const lab = $(vid); if (lab) lab.textContent = h[key] + " " + unit;
-      }
-    });
+    const el = $("#humAmount"); if (!el) return;
+    const v = typeof h.amount === "number" ? h.amount : 0;
+    el.value = v;
+    el.style.setProperty("--fill", v + "%");
+    const lab = $("#humAmountVal"); if (lab) lab.textContent = v === 0 ? "Off" : v + "%";
   }
 
   function applySoundState(s) {
@@ -1987,23 +1973,14 @@
       const a = api(); if (a && a.setSound) a.setSound("pack", currentPackId);
     });
 
-    const ht = $("#humToggle");
-    if (ht) ht.addEventListener("click", () => {
-      const on = !ht.classList.contains("on");
-      ht.classList.toggle("on", on);
-      ht.textContent = on ? "On" : "Off";
-      const box = $("#humSliders");
-      if (box) { box.style.opacity = on ? "1" : ".4"; box.style.pointerEvents = on ? "" : "none"; }
-      const a = api(); if (a && a.setHumanize) a.setHumanize("enabled", on);
-    });
-    HUM_SLIDERS.forEach(([sid, vid, key, unit]) => {
-      const el = $(sid); if (!el) return;
-      el.addEventListener("input", () => {
-        el.style.setProperty("--fill", (100 * (el.value - el.min) / (el.max - el.min)) + "%");
-        const lab = $(vid); if (lab) lab.textContent = el.value + " " + unit;
+    const ha = $("#humAmount");
+    if (ha) {
+      ha.addEventListener("input", () => {
+        ha.style.setProperty("--fill", ha.value + "%");
+        const lab = $("#humAmountVal"); if (lab) lab.textContent = ha.value === "0" ? "Off" : ha.value + "%";
       });
-      el.addEventListener("change", () => { const a = api(); if (a && a.setHumanize) a.setHumanize(key, parseInt(el.value)); });
-    });
+      ha.addEventListener("change", () => { const a = api(); if (a && a.setHumanize) a.setHumanize("amount", parseInt(ha.value)); });
+    }
 
     const sl = $("#speedSlider"), inp = $("#speedInput");
     sl.addEventListener("input", () => { setSpeedUI(parseInt(sl.value)); });
