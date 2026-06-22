@@ -25,3 +25,6 @@ Midis/
 *.mid
 *.midi
 *.log
+
+# ---- local-only stuff: tooling, Discord assets/scripts — never goes to GitHub ----
+_local/
