@@ -29,7 +29,20 @@
     else if (event === "inputState") applyInputState(payload);
     else if (event === "inputNote") { /* reserved for future visual keyboard */ }
     else if (event === "notes") payload.events.forEach(handleNote);
+    else if (event === "update") showUpdate(payload);
   };
+
+  let updateInfo = null;
+  function showUpdate(p) {
+    if (!p || !p.newer) return;
+    updateInfo = p;
+    const t = $("#updateToast"); if (!t) return;
+    const ver = $("#utVer"); if (ver) ver.textContent = "v" + (p.latest || "");
+    const dl = $("#utDl"); if (dl) { dl.disabled = false; dl.textContent = "Download"; }
+    const notes = $("#utNotes"); if (notes) notes.style.display = p.url ? "" : "none";
+    const sub = $("#utSub"); if (sub) sub.textContent = "A newer version of Velo is out.";
+    t.hidden = false;
+  }
 
   // ---------- SOUND (mic illusion) ----------
   let soundOn = false, soundMode = "piano", soundVol = 70;
@@ -2011,6 +2024,32 @@
       });
       el.addEventListener("change", () => { const a = api(); if (a && a.setHumanize) a.setHumanize(k, parseInt(el.value)); });
     });
+
+    const ut = $("#updateToast");
+    if (ut) {
+      $("#utClose").addEventListener("click", () => { ut.hidden = true; });
+      $("#utNotes").addEventListener("click", () => {
+        const a = api(); if (a && a.openRelease && updateInfo) a.openRelease(updateInfo.url);
+      });
+      $("#utDl").addEventListener("click", () => {
+        const a = api(); if (!a || !updateInfo) return;
+        const btn = $("#utDl");
+        if (updateInfo.asset && a.downloadUpdate) {
+          btn.disabled = true; btn.textContent = "Downloading…";
+          a.downloadUpdate(updateInfo.asset, updateInfo.tag || "").then((res) => {
+            if (res && res.ok) {
+              btn.textContent = "Saved ✓";
+              const sub = $("#utSub"); if (sub) sub.textContent = "Saved to Downloads — extract it and replace your Velo folder.";
+            } else {
+              btn.disabled = false; btn.textContent = "Download";
+              if (a.openRelease) a.openRelease(updateInfo.url);
+            }
+          }).catch(() => { btn.disabled = false; btn.textContent = "Download"; });
+        } else if (a.openRelease) {
+          a.openRelease(updateInfo.url);
+        }
+      });
+    }
 
     const sl = $("#speedSlider"), inp = $("#speedInput");
     sl.addEventListener("input", () => { setSpeedUI(parseInt(sl.value)); });

@@ -24,6 +24,7 @@
 - 🌐 **Online Sequencer in the MIDI Hub** — search and download from [onlinesequencer.net](https://onlinesequencer.net) right inside Velo, alongside nanoMIDI and BitMidi.
 - ▦ **Stage now plays the piano** — the visualizer voices the song as the notes cross, not just light up.
 - 🔊 **Shows up as "Velo"** (with its icon) in the Windows volume mixer, instead of "Microsoft Edge WebView2".
+- 🔔 **Update notifier** — Velo checks GitHub on launch and, when a newer release exists, offers to grab it (downloads the zip to your Downloads folder). No silent self-overwriting.
 - ✅ **Runs straight from a download** — Velo clears the Windows "downloaded file" block itself, so a freshly unzipped copy just opens.
 
 ## 📸 Screenshots

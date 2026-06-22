@@ -23,6 +23,7 @@ import sys
 import json
 import base64
 import logging
+import threading
 
 # Keep WebView2 timers/rendering alive even when a window is hidden or occluded.
 # This lets the Online Sequencer helper window clear its Cloudflare check while
@@ -227,6 +228,19 @@ class Api:
 
     def setHumanize(self, key, value):
         return PLAYER.setHumanize(key, value)
+
+    # ----- self-update (check + assisted download, never silent overwrite) --
+    def checkUpdate(self):
+        from velo.backend import update
+        return update.checkLatest()
+
+    def openRelease(self, url):
+        from velo.backend import update
+        return {"ok": update.openReleasePage(url)}
+
+    def downloadUpdate(self, assetUrl, tag=""):
+        from velo.backend import update
+        return update.downloadZip(assetUrl, tag)
 
     def setOutputDevice(self, name):
         return PLAYER.setOutputDevice(name)
@@ -568,6 +582,16 @@ def main():
             audioname.brand("Velo", icon=iconPath if os.path.exists(iconPath) else None)
         except Exception:
             pass
+        # check GitHub for a newer release (non-blocking); the UI shows a banner
+        def _checkUpdate():
+            try:
+                from velo.backend import update
+                res = update.checkLatest()
+                if res.get("ok") and res.get("newer"):
+                    emit("update", res)
+            except Exception:
+                pass
+        threading.Thread(target=_checkUpdate, name="velo-update", daemon=True).start()
 
     window.events.loaded += onLoaded
 

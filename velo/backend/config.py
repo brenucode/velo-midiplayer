@@ -12,6 +12,9 @@ import json
 import copy
 
 APP_NAME = "Velo"
+# Single source of truth for the running version (keep in sync with version.txt).
+# The updater compares this against the latest GitHub release tag.
+APP_VERSION = "1.1"
 
 
 def resourcePath(relativePath):

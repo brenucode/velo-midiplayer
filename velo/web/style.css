@@ -576,3 +576,25 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.18)}
 .sg-highway{position:absolute;left:0;right:0;top:0;bottom:var(--ph,170px);overflow:hidden}
 .sg-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
   color:var(--txt-3);font-size:15px;pointer-events:none}
+
+/* ---- update toast ---- */
+#updateToast{position:fixed;right:18px;bottom:18px;z-index:9999;display:flex;align-items:center;gap:16px;
+  max-width:460px;padding:12px 14px;border-radius:14px;background:var(--panel-2);
+  border:1px solid var(--line-strong);box-shadow:0 14px 44px rgba(0,0,0,.55);
+  animation:utin .35s cubic-bezier(.2,.8,.2,1)}
+#updateToast[hidden]{display:none}
+@keyframes utin{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.ut-info{display:flex;align-items:center;gap:11px;min-width:0}
+.ut-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);
+  box-shadow:0 0 0 4px rgba(200,255,77,.15);flex:none}
+.ut-title{font-size:13px;font-weight:600;color:var(--txt)}
+.ut-title b{color:var(--accent);font-weight:700}
+.ut-sub{font-size:11px;color:var(--txt-2);margin-top:1px;max-width:250px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ut-actions{display:flex;align-items:center;gap:8px;flex:none}
+#updateToast .btn{height:32px;padding:0 12px;font-size:12px}
+.btn.ut-dl{background:var(--accent);color:var(--accent-ink);font-weight:700;border-color:var(--accent)}
+.btn.ut-dl:hover{background:var(--accent-dim)}
+.ut-x{background:none;border:none;color:var(--txt-3);cursor:pointer;font-size:13px;
+  padding:4px 6px;border-radius:8px;line-height:1}
+.ut-x:hover{color:var(--txt);background:var(--panel)}
