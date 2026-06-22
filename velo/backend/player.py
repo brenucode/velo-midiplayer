@@ -317,6 +317,20 @@ class Player:
         self._emitState()
         return self.getState()
 
+    def setHumanize(self, key, value):
+        h = configuration.configData["midiPlayer"].setdefault(
+            "humanize", {"enabled": False, "timing": 18, "velocity": 12, "chord": 14})
+        if key == "enabled":
+            h["enabled"] = bool(value)
+        elif key in ("timing", "velocity", "chord"):
+            try:
+                h[key] = max(0, min(100, int(value)))
+            except Exception:
+                return self.getState()
+        configuration.save()
+        self._emitState()
+        return self.getState()
+
     def setSpeed(self, value):
         try:
             value = max(1, min(500, int(value)))
@@ -410,6 +424,7 @@ class Player:
             "lastView": configuration.configData.get("appUI", {}).get("lastView", "player"),
             "onTop": bool(configuration.configData.get("appUI", {}).get("onTop", False)),
             "sound": configuration.configData.get("sound", {"enabled": False, "mode": "piano", "volume": 70, "pack": "brown-local", "piano": "grand"}),
+            "humanize": configuration.configData["midiPlayer"].get("humanize", {"enabled": False, "timing": 18, "velocity": 12, "chord": 14}),
         }
 
     def _emitState(self):

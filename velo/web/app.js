@@ -266,6 +266,29 @@
     if (masterGain) masterGain.gain.value = v / 100;
   }
 
+  const HUM_SLIDERS = [
+    ["#humTiming", "#humTimingVal", "timing", "ms"],
+    ["#humChord", "#humChordVal", "chord", "ms"],
+    ["#humVelocity", "#humVelVal", "velocity", "%"],
+  ];
+
+  function applyHumanizeState(h) {
+    if (!h) return;
+    const on = !!h.enabled;
+    const t = $("#humToggle");
+    if (t) { t.textContent = on ? "On" : "Off"; t.classList.toggle("on", on); }
+    const sl = $("#humSliders");
+    if (sl) { sl.style.opacity = on ? "1" : ".4"; sl.style.pointerEvents = on ? "" : "none"; }
+    HUM_SLIDERS.forEach(([sid, vid, key, unit]) => {
+      const el = $(sid);
+      if (el && typeof h[key] === "number") {
+        el.value = h[key];
+        el.style.setProperty("--fill", (100 * (el.value - el.min) / (el.max - el.min)) + "%");
+        const lab = $(vid); if (lab) lab.textContent = h[key] + " " + unit;
+      }
+    });
+  }
+
   function applySoundState(s) {
     if (!s) return;
     soundOn = !!s.enabled;
@@ -344,6 +367,7 @@
     if (s.isRunning && s.totalSeconds) scrubbingTotal = s.totalSeconds;
     if ("onTop" in s) $("#winPin").classList.toggle("on", !!s.onTop);
     if (s.sound) applySoundState(s.sound);
+    if (s.humanize) applyHumanizeState(s.humanize);
 
     if (queueVisible() && !queueDragging) renderQueue();
 
@@ -1961,6 +1985,24 @@
       stopAllNotes();
       if (soundOn) ensureAudio();   // triggers loadPack(currentPackId)
       const a = api(); if (a && a.setSound) a.setSound("pack", currentPackId);
+    });
+
+    const ht = $("#humToggle");
+    if (ht) ht.addEventListener("click", () => {
+      const on = !ht.classList.contains("on");
+      ht.classList.toggle("on", on);
+      ht.textContent = on ? "On" : "Off";
+      const box = $("#humSliders");
+      if (box) { box.style.opacity = on ? "1" : ".4"; box.style.pointerEvents = on ? "" : "none"; }
+      const a = api(); if (a && a.setHumanize) a.setHumanize("enabled", on);
+    });
+    HUM_SLIDERS.forEach(([sid, vid, key, unit]) => {
+      const el = $(sid); if (!el) return;
+      el.addEventListener("input", () => {
+        el.style.setProperty("--fill", (100 * (el.value - el.min) / (el.max - el.min)) + "%");
+        const lab = $(vid); if (lab) lab.textContent = el.value + " " + unit;
+      });
+      el.addEventListener("change", () => { const a = api(); if (a && a.setHumanize) a.setHumanize(key, parseInt(el.value)); });
     });
 
     const sl = $("#speedSlider"), inp = $("#speedInput");

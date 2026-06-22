@@ -225,6 +225,9 @@ class Api:
     def setSound(self, key, value):
         return PLAYER.setSound(key, value)
 
+    def setHumanize(self, key, value):
+        return PLAYER.setHumanize(key, value)
+
     def setOutputDevice(self, name):
         return PLAYER.setOutputDevice(name)
 

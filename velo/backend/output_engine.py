@@ -10,6 +10,7 @@ import time
 import random
 
 from velo.backend import config as configuration
+from velo.backend import humanize
 
 activeTransposedNotes = {}
 activeNotes = set()
@@ -105,6 +106,7 @@ def playMidiOnce(midiFile, startOffset=0.0):
     startTime = time.monotonic() - (startOffset / (playbackSpeed if playbackSpeed else 1.0))
     currentTime = 0
     songPos = 0.0
+    humanizer = humanize.Humanizer()
     for msg in mid:
         if stopEvent.is_set() or closeThread:
             return False
@@ -118,7 +120,8 @@ def playMidiOnce(midiFile, startOffset=0.0):
                 adjustedDelay *= random.uniform(0.5, 1.5)
 
         currentTime += adjustedDelay
-        targetTime = startTime + currentTime
+        # humanize the press/release time without drifting the song clock
+        targetTime = startTime + currentTime + (0.0 if skipping else humanizer.offset(msg))
 
         while time.monotonic() < targetTime:
             if stopEvent.is_set() or closeThread:
@@ -147,6 +150,7 @@ def playMidiOnce(midiFile, startOffset=0.0):
                 continue
 
             if msg.type == "note_on" and msg.velocity > 0:
+                msg.velocity = humanize.jitterVelocity(msg.velocity)
                 if configuration.configData["midiPlayer"]["randomFail"]["enabled"]:
                     if random.random() < configuration.configData["midiPlayer"]["randomFail"]["transpose"] / 100:
                         delta = random.randint(-12, 12)

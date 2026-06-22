@@ -14,6 +14,7 @@ import random
 
 from pynput import keyboard as pynputKeyboard
 from velo.backend import config as configuration
+from velo.backend import humanize
 
 pressedKeys = set()
 heldKeys = set()
@@ -239,6 +240,7 @@ def playMidiOnce(midiFile, startOffset=0.0):
     currentTime = 0
     songPos = 0.0
     wasPaused = False
+    humanizer = humanize.Humanizer()
 
     for msg in mid:
         if stopEvent.is_set() or closeThread:
@@ -254,7 +256,9 @@ def playMidiOnce(midiFile, startOffset=0.0):
                 adjustedDelay *= speedFactor
 
         currentTime += adjustedDelay
-        targetTime = startTime + currentTime
+        # humanize: nudge this note around its grid time (press OR release),
+        # without ever feeding the offset back into currentTime (no drift)
+        targetTime = startTime + currentTime + (0.0 if skipping else humanizer.offset(msg))
 
         while time.monotonic() < targetTime:
             if stopEvent.is_set() or closeThread:
@@ -302,6 +306,7 @@ def playMidiOnce(midiFile, startOffset=0.0):
 
         if hasattr(msg, "note"):
             if msg.type == "note_on" and msg.velocity > 0:
+                msg.velocity = humanize.jitterVelocity(msg.velocity)
                 if configuration.configData["midiPlayer"]["randomFail"]["enabled"] and random.random() < configuration.configData["midiPlayer"]["randomFail"]["transpose"] / 100:
                     delta = random.randint(-12, 12)
                     newNote = msg.note + delta

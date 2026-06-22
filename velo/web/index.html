@@ -434,7 +434,20 @@
             </div>
             <div class="hk-hint">Plays the note (real piano sample) or a real mechanical key sound in the app, synced to the song. Extra keyboard models stream online (cached after first use); the default brown works offline. To make it come out of your microphone (so others hear you "playing"): install a virtual audio cable (VB-CABLE), route Velo's audio to it in Windows sound settings, and pick it as your mic in Discord.</div>
           </div>
-          <div class="card about reveal" style="--d:2">
+          <div class="card humanize reveal" style="--d:2">
+            <div class="card-title">Humanize — natural feel</div>
+            <div class="sound-ctl">
+              <button class="chip" id="humToggle">Off</button>
+              <span class="hk-hint" style="margin:0;flex:1;min-width:120px">Off = the exact, mechanical original.</span>
+            </div>
+            <div id="humSliders" style="margin-top:14px;display:flex;flex-direction:column;gap:13px">
+              <div class="sound-vol"><span>Timing</span><input type="range" id="humTiming" min="0" max="60" value="18" /><span id="humTimingVal">18 ms</span></div>
+              <div class="sound-vol"><span>Chord roll</span><input type="range" id="humChord" min="0" max="50" value="14" /><span id="humChordVal">14 ms</span></div>
+              <div class="sound-vol"><span>Velocity</span><input type="range" id="humVelocity" min="0" max="40" value="12" /><span id="humVelVal">12 %</span></div>
+            </div>
+            <div class="hk-hint">A real player never hits or releases a chord's notes at the exact same instant, and never plays two notes with identical force. This adds tiny random imperfections so it feels played, not computed — on both the press and the release. Higher = looser. Works for QWERTY, MIDI output and the in-app piano sound.</div>
+          </div>
+          <div class="card about reveal" style="--d:3">
             <div class="card-title">About</div>
             <div class="about-row">
               <span class="about-mark"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M5 19V5l8 4-8 4" fill="currentColor"/><path d="M14 5v14M19 5v14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span>
