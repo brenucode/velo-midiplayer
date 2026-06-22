@@ -27,37 +27,58 @@ import random
 
 from velo.backend import config as configuration
 
-# All magnitudes in milliseconds. Each profile is a *character*, not a single
-# value — the bands below are sampled fresh per chord, so intensity wanders.
-PROFILES = {
-    "moderate": {"timing": 32, "gapMin": 28, "gapMax": 62, "tightProb": 0.25,
-                 "rollCap": 240, "driftStep": 9, "driftMax": 22, "vel": 22},
-    "loose":    {"timing": 55, "gapMin": 48, "gapMax": 98, "tightProb": 0.20,
-                 "rollCap": 430, "driftStep": 16, "driftMax": 45, "vel": 30},
-    "extreme":  {"timing": 80, "gapMin": 72, "gapMax": 145, "tightProb": 0.16,
-                 "rollCap": 640, "driftStep": 26, "driftMax": 75, "vel": 40},
+# The user controls four 0-100 sliders; each maps onto a real magnitude here
+# (full = slider at 100). Profiles are just presets that fill those sliders.
+_MAX_GAP_MS = 145.0      # widest average per-note chord gap
+_MAX_TIMING_MS = 80.0    # widest ± beat jitter
+_MAX_DRIFT_MS = 75.0     # widest rubato wander
+_MAX_VEL_PCT = 42.0      # widest ± velocity swing
+
+# Presets in slider units (roll / timing / rubato / velocity, each 0-100).
+PRESETS = {
+    "moderate": {"roll": 43, "timing": 40, "rubato": 29, "velocity": 52},
+    "loose":    {"roll": 68, "timing": 69, "rubato": 60, "velocity": 71},
+    "extreme":  {"roll": 100, "timing": 100, "rubato": 100, "velocity": 95},
 }
-DEFAULT_PROFILE = "off"
-_ORDER = ("off", "moderate", "loose", "extreme")
+DEFAULTS = {"on": False, "profile": "moderate",
+            "roll": 43, "timing": 40, "rubato": 29, "velocity": 52}
 
 
-def profileName():
+def _cfg():
     h = configuration.configData.get("midiPlayer", {}).get("humanize")
-    if not isinstance(h, dict):
-        return "off"
-    p = h.get("profile", "off")
-    return p if p in _ORDER else "off"
+    return h if isinstance(h, dict) else {}
 
 
-def _profile():
-    return PROFILES.get(profileName())   # None when off
+def _slider(h, key):
+    try:
+        return max(0.0, min(100.0, float(h.get(key, 0)))) / 100.0
+    except Exception:
+        return 0.0
+
+
+def _active():
+    """Resolve the four sliders into real magnitudes, or None when off."""
+    h = _cfg()
+    if not h.get("on"):
+        return None
+    gapMax = _MAX_GAP_MS * _slider(h, "roll")
+    return {
+        "timing": _MAX_TIMING_MS * _slider(h, "timing"),
+        "gapMin": gapMax * 0.4,
+        "gapMax": gapMax,
+        "tightProb": 0.2,
+        "rollCap": max(120.0, gapMax * 4.0),
+        "driftMax": _MAX_DRIFT_MS * _slider(h, "rubato"),
+        "driftStep": _MAX_DRIFT_MS * _slider(h, "rubato") * 0.35,
+        "vel": _MAX_VEL_PCT * _slider(h, "velocity"),
+    }
 
 
 def jitterVelocity(velocity):
-    """Return ``velocity`` nudged within the active profile's range (1..127)."""
+    """Return ``velocity`` nudged within the active range (1..127)."""
     if velocity <= 0:
         return velocity
-    p = _profile()
+    p = _active()
     if not p or p["vel"] <= 0:
         return velocity
     factor = 1.0 + random.uniform(-p["vel"] / 100.0, p["vel"] / 100.0)
@@ -96,7 +117,7 @@ class Humanizer:
 
     def offset(self, msg):
         """Seconds to add to this message's scheduled time. 0 when off."""
-        p = _profile()
+        p = _active()
         if p is None:
             return 0.0
 

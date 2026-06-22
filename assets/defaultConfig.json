@@ -22,7 +22,12 @@
       "transpose": 5.0
     },
     "humanize": {
-      "profile": "off"
+      "on": false,
+      "profile": "moderate",
+      "roll": 43,
+      "timing": 40,
+      "rubato": 29,
+      "velocity": 52
     },
     "pianoMap": {
       "88keyMap": {

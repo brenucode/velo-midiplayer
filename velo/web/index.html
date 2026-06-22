@@ -442,7 +442,13 @@
               <button class="seg-opt" data-hum="loose">Loose</button>
               <button class="seg-opt" data-hum="extreme">Extreme</button>
             </div>
-            <div class="hk-hint">A real player never hits or releases a chord's notes at the exact same instant — and never the same way twice. Each profile keeps re-randomising: chords roll by a different amount every time, the tempo gently breathes (rubato), and each note's force varies. <b>Off</b> = exact mechanical original · <b>Moderate</b> = subtle · <b>Loose</b> = clearly played · <b>Extreme</b> = very loose, almost improvised. Works for QWERTY, MIDI output and the in-app piano sound.</div>
+            <div id="humSliders" style="margin-top:14px;display:flex;flex-direction:column;gap:12px">
+              <div class="sound-vol"><span>Roll</span><input type="range" id="humRoll" min="0" max="100" value="43" /><span id="humRollVal">43</span></div>
+              <div class="sound-vol"><span>Timing</span><input type="range" id="humTiming" min="0" max="100" value="40" /><span id="humTimingVal">40</span></div>
+              <div class="sound-vol"><span>Rubato</span><input type="range" id="humRubato" min="0" max="100" value="29" /><span id="humRubatoVal">29</span></div>
+              <div class="sound-vol"><span>Velocity</span><input type="range" id="humVelocity" min="0" max="100" value="52" /><span id="humVelocityVal">52</span></div>
+            </div>
+            <div class="hk-hint">Pick a profile as a starting point, then fine-tune the sliders — your settings are saved and restored next time. <b>Roll</b> = how much chords spread (and re-randomise every chord) · <b>Timing</b> = looseness of each note · <b>Rubato</b> = how much the tempo breathes · <b>Velocity</b> = force variation. Each profile keeps re-randomising so it never repeats. Off = exact mechanical original.</div>
           </div>
           <div class="card about reveal" style="--d:3">
             <div class="card-title">About</div>

@@ -266,10 +266,24 @@
     if (masterGain) masterGain.gain.value = v / 100;
   }
 
+  const HUM_KEYS = ["roll", "timing", "rubato", "velocity"];
+  const humId = (k) => "hum" + k[0].toUpperCase() + k.slice(1);
+
   function applyHumanizeState(h) {
     if (!h) return;
-    const prof = h.profile || "off";
+    const on = !!h.on;
+    const prof = on ? (h.profile || "custom") : "off";
     $$("#humProfile .seg-opt").forEach((o) => o.classList.toggle("active", o.dataset.hum === prof));
+    const box = $("#humSliders");
+    if (box) { box.style.opacity = on ? "1" : ".4"; box.style.pointerEvents = on ? "" : "none"; }
+    HUM_KEYS.forEach((k) => {
+      const el = $("#" + humId(k));
+      if (el && typeof h[k] === "number") {
+        el.value = h[k];
+        el.style.setProperty("--fill", h[k] + "%");
+        const lab = $("#" + humId(k) + "Val"); if (lab) lab.textContent = h[k];
+      }
+    });
   }
 
   function applySoundState(s) {
@@ -1983,8 +1997,20 @@
 
     $$("#humProfile .seg-opt").forEach((o) => o.addEventListener("click", () => {
       $$("#humProfile .seg-opt").forEach((x) => x.classList.toggle("active", x === o));
+      const on = o.dataset.hum !== "off";
+      const box = $("#humSliders"); if (box) { box.style.opacity = on ? "1" : ".4"; box.style.pointerEvents = on ? "" : "none"; }
       const a = api(); if (a && a.setHumanize) a.setHumanize("profile", o.dataset.hum);
     }));
+    HUM_KEYS.forEach((k) => {
+      const el = $("#" + humId(k)); if (!el) return;
+      el.addEventListener("input", () => {
+        el.style.setProperty("--fill", el.value + "%");
+        const lab = $("#" + humId(k) + "Val"); if (lab) lab.textContent = el.value;
+        // editing a slider means it's no longer a named preset
+        $$("#humProfile .seg-opt").forEach((x) => x.classList.remove("active"));
+      });
+      el.addEventListener("change", () => { const a = api(); if (a && a.setHumanize) a.setHumanize(k, parseInt(el.value)); });
+    });
 
     const sl = $("#speedSlider"), inp = $("#speedInput");
     sl.addEventListener("input", () => { setSpeedUI(parseInt(sl.value)); });

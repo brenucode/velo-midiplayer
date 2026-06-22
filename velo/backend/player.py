@@ -318,10 +318,25 @@ class Player:
         return self.getState()
 
     def setHumanize(self, key, value):
-        h = configuration.configData["midiPlayer"].setdefault("humanize", {"profile": "off"})
+        from velo.backend import humanize
+        h = configuration.configData["midiPlayer"].setdefault("humanize", dict(humanize.DEFAULTS))
         if key == "profile":
-            valid = ("off", "moderate", "loose", "extreme")
-            h["profile"] = str(value) if str(value) in valid else "off"
+            if value == "off":
+                h["on"] = False
+                h["profile"] = "off"
+            elif value in humanize.PRESETS:
+                h.update(humanize.PRESETS[value])
+                h["on"] = True
+                h["profile"] = value
+        elif key == "on":
+            h["on"] = bool(value)
+        elif key in ("roll", "timing", "rubato", "velocity"):
+            try:
+                h[key] = max(0, min(100, int(value)))
+            except Exception:
+                return self.getState()
+            h["on"] = True
+            h["profile"] = "custom"
         configuration.save()
         self._emitState()
         return self.getState()
@@ -419,7 +434,7 @@ class Player:
             "lastView": configuration.configData.get("appUI", {}).get("lastView", "player"),
             "onTop": bool(configuration.configData.get("appUI", {}).get("onTop", False)),
             "sound": configuration.configData.get("sound", {"enabled": False, "mode": "piano", "volume": 70, "pack": "brown-local", "piano": "grand"}),
-            "humanize": configuration.configData["midiPlayer"].get("humanize", {"profile": "off"}),
+            "humanize": configuration.configData["midiPlayer"].get("humanize", {"on": False, "profile": "moderate", "roll": 43, "timing": 40, "rubato": 29, "velocity": 52}),
         }
 
     def _emitState(self):
