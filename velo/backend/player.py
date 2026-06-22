@@ -318,12 +318,10 @@ class Player:
         return self.getState()
 
     def setHumanize(self, key, value):
-        h = configuration.configData["midiPlayer"].setdefault("humanize", {"amount": 0})
-        if key == "amount":
-            try:
-                h["amount"] = max(0, min(100, int(value)))
-            except Exception:
-                return self.getState()
+        h = configuration.configData["midiPlayer"].setdefault("humanize", {"profile": "off"})
+        if key == "profile":
+            valid = ("off", "moderate", "loose", "extreme")
+            h["profile"] = str(value) if str(value) in valid else "off"
         configuration.save()
         self._emitState()
         return self.getState()
@@ -421,7 +419,7 @@ class Player:
             "lastView": configuration.configData.get("appUI", {}).get("lastView", "player"),
             "onTop": bool(configuration.configData.get("appUI", {}).get("onTop", False)),
             "sound": configuration.configData.get("sound", {"enabled": False, "mode": "piano", "volume": 70, "pack": "brown-local", "piano": "grand"}),
-            "humanize": configuration.configData["midiPlayer"].get("humanize", {"amount": 0}),
+            "humanize": configuration.configData["midiPlayer"].get("humanize", {"profile": "off"}),
         }
 
     def _emitState(self):

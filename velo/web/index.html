@@ -436,12 +436,13 @@
           </div>
           <div class="card humanize reveal" style="--d:2">
             <div class="card-title">Humanize — natural feel</div>
-            <div class="sound-vol">
-              <span>Amount</span>
-              <input type="range" id="humAmount" min="0" max="100" value="0" />
-              <span id="humAmountVal">Off</span>
+            <div class="seg" id="humProfile">
+              <button class="seg-opt active" data-hum="off">Off</button>
+              <button class="seg-opt" data-hum="moderate">Moderate</button>
+              <button class="seg-opt" data-hum="loose">Loose</button>
+              <button class="seg-opt" data-hum="extreme">Extreme</button>
             </div>
-            <div class="hk-hint">A real player never hits or releases a chord's notes at the exact same instant, and never plays two notes with identical force. Drag this up to add that feel — note timing, chord roll and force all loosen together. <b>0 = the exact, mechanical original</b>; higher = looser. Works for QWERTY, MIDI output and the in-app piano sound.</div>
+            <div class="hk-hint">A real player never hits or releases a chord's notes at the exact same instant — and never the same way twice. Each profile keeps re-randomising: chords roll by a different amount every time, the tempo gently breathes (rubato), and each note's force varies. <b>Off</b> = exact mechanical original · <b>Moderate</b> = subtle · <b>Loose</b> = clearly played · <b>Extreme</b> = very loose, almost improvised. Works for QWERTY, MIDI output and the in-app piano sound.</div>
           </div>
           <div class="card about reveal" style="--d:3">
             <div class="card-title">About</div>

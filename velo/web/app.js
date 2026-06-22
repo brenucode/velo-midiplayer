@@ -268,11 +268,8 @@
 
   function applyHumanizeState(h) {
     if (!h) return;
-    const el = $("#humAmount"); if (!el) return;
-    const v = typeof h.amount === "number" ? h.amount : 0;
-    el.value = v;
-    el.style.setProperty("--fill", v + "%");
-    const lab = $("#humAmountVal"); if (lab) lab.textContent = v === 0 ? "Off" : v + "%";
+    const prof = h.profile || "off";
+    $$("#humProfile .seg-opt").forEach((o) => o.classList.toggle("active", o.dataset.hum === prof));
   }
 
   function applySoundState(s) {
@@ -1984,14 +1981,10 @@
       const a = api(); if (a && a.setSound) a.setSound("pack", currentPackId);
     });
 
-    const ha = $("#humAmount");
-    if (ha) {
-      ha.addEventListener("input", () => {
-        ha.style.setProperty("--fill", ha.value + "%");
-        const lab = $("#humAmountVal"); if (lab) lab.textContent = ha.value === "0" ? "Off" : ha.value + "%";
-      });
-      ha.addEventListener("change", () => { const a = api(); if (a && a.setHumanize) a.setHumanize("amount", parseInt(ha.value)); });
-    }
+    $$("#humProfile .seg-opt").forEach((o) => o.addEventListener("click", () => {
+      $$("#humProfile .seg-opt").forEach((x) => x.classList.toggle("active", x === o));
+      const a = api(); if (a && a.setHumanize) a.setHumanize("profile", o.dataset.hum);
+    }));
 
     const sl = $("#speedSlider"), inp = $("#speedInput");
     sl.addEventListener("input", () => { setSpeedUI(parseInt(sl.value)); });

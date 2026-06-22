@@ -22,7 +22,7 @@
       "transpose": 5.0
     },
     "humanize": {
-      "amount": 0
+      "profile": "off"
     },
     "pianoMap": {
       "88keyMap": {
