@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-1c1c23?style=flat-square" />
-  <img src="https://img.shields.io/badge/version-v1.0-c8ff4d?style=flat-square&labelColor=1c1c23" />
+  <img src="https://img.shields.io/badge/version-v1.1-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/license-GPL%20v3-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/made%20by-brenu-1c1c23?style=flat-square" />
 </p>
@@ -17,6 +17,14 @@
 ---
 
 **Velo** started from a simple itch: play MIDI in an interface that doesn't look like 2009 software. A clean player, an online song library, a practice mode that feels like a little game, and a stage mode to look good on stream. No bloat, no annoying install — open it and it works.
+
+## 🆕 What's new in v1.1
+
+- 🎭 **Humanizer** — playback no longer sounds like a robot. A profile (Subtle / Moderate / Loose) plus fine sliders add human imperfection: chords roll instead of hitting in unison, the timing of each note and release wanders, the tempo gently breathes (rubato), and the force varies — re-randomised every chord so it never repeats. Your settings are saved.
+- 🌐 **Online Sequencer in the MIDI Hub** — search and download from [onlinesequencer.net](https://onlinesequencer.net) right inside Velo, alongside nanoMIDI and BitMidi.
+- ▦ **Stage now plays the piano** — the visualizer voices the song as the notes cross, not just light up.
+- 🔊 **Shows up as "Velo"** (with its icon) in the Windows volume mixer, instead of "Microsoft Edge WebView2".
+- ✅ **Runs straight from a download** — Velo clears the Windows "downloaded file" block itself, so a freshly unzipped copy just opens.
 
 ## 📸 Screenshots
 
@@ -40,7 +48,8 @@
   - **Free play** — a free piano (keyboard or mouse), with **rising trails** on every note and a **preview** that plays the song for you.
   - **Section trainer** — pick the hard part and drill it in **slow motion that speeds up** as you nail it.
 - 🌐 **MIDI Hub** — search and download songs from three libraries without leaving Velo: the **nanoMIDI** library, **Online Sequencer**, and **BitMidi**. Pick the source from the dropdown; results show up in Velo's own UI.
-- ▦ **Stage mode** — notes fall onto a **fullscreen** piano, synced to what's playing. Perfect to leave on screen for Discord/streaming.
+- ▦ **Stage mode** — notes fall onto a **fullscreen** piano and the song **plays as they cross**, synced to what's playing. Perfect to leave on screen for Discord/streaming.
+- 🎭 **Humanizer** — optional human feel: chord roll, timing/release wander, rubato and velocity variation, with profiles + sliders. Off by default (exact, mechanical original).
 - 🥁 **Drums** and ⌨️ **MIDI → Keys** — turn a MIDI controller into a keyboard in real time.
 - 🔊 **Real sound** — several **piano** models (Grand, Bright, Electric…) plus a **Cherry MX** mechanical-keyboard sound.
 - 🏆 **Records** per song · 🖥️ **responsive** layout + **fullscreen (F11)**.
@@ -104,7 +113,9 @@ You can remap any of them in **Settings**. They work even when Velo is minimized
 3. **Section trainer:** toggle it on and drag the handles to drill just one part, slowly.
 
 ### 4. Stage mode (visualizer)
-On the **Player**, click **Stage** (or `F11` for fullscreen). Hit play on a song and the notes fall onto the piano, in sync — great for streaming.
+On the **Player**, click **Stage** (or `F11` for fullscreen). Hit play on a song and the notes fall onto the piano and play as they cross, in sync — great for streaming.
+
+> Tip: turn on **Humanize** (Settings) for a less robotic, more played feel.
 
 ### 5. 🎙️ Sound like you're playing live (Discord / stream)
 The idea: route Velo's piano sound into your virtual "microphone".
