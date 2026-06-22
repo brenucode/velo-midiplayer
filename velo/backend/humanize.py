@@ -26,9 +26,10 @@ DEFAULT_AMOUNT = 45
 
 # the three effects at full strength (amount = 100); everything below scales
 # linearly from these
-_MAX_TIMING_MS = 35.0
-_MAX_CHORD_MS = 30.0
+_MAX_TIMING_MS = 30.0     # ± jitter on when a beat/chord lands
+_MAX_CHORD_MS = 45.0      # average gap between successive notes of one chord
 _MAX_VELOCITY_PCT = 22.0
+_MAX_ROLL_MS = 140.0      # cap on a chord's total spread, so big chords stay sane
 
 
 def amount():
@@ -62,19 +63,45 @@ def jitterVelocity(velocity):
 
 
 class Humanizer:
-    """Per-playback state for timing/chord offsets. One instance per run."""
+    """Per-playback timing state.
+
+    The key to a believable chord is that its notes must *never* land (or lift)
+    on the same instant. So we split the humanization in two:
+
+    * a **shared beat jitter** — the whole cluster of simultaneous notes is
+      nudged together by one random ± offset, humanizing *when* the chord hits
+      without smearing it apart randomly;
+    * a **monotonic roll** — within the cluster each successive note is pushed
+      a little further than the previous one by an always-positive random gap,
+      so the chord rolls low→high like real fingers and the random jitter can
+      never cancel the spread back to unison.
+
+    Onsets and releases roll independently, so chords don't release as a block
+    either. Nothing is fed back into the song clock, so tempo never drifts."""
 
     def __init__(self):
-        self._onIdx = 0      # position within a simultaneous cluster of onsets
-        self._offIdx = 0     # ... and of releases
+        self._onJitter = 0.0    # shared beat jitter for the current onset cluster
+        self._offJitter = 0.0   # ... and for the current release cluster
+        self._onRoll = 0.0      # cumulative spread among this cluster's onsets
+        self._offRoll = 0.0     # ... and among its releases
 
     def offset(self, msg):
         """Seconds to add to this message's scheduled time (never subtracted
-        from the song clock — purely a local nudge). 0 for non-notes / off."""
-        if getattr(msg, "is_meta", False) or not hasattr(msg, "note"):
-            return 0.0
+        from the song clock). 0 for non-notes / when off."""
         timing, chord, _ = _params()
         if timing <= 0 and chord <= 0:
+            return 0.0
+
+        # any real time advance opens a new cluster: re-roll the shared beat
+        # jitter and reset the spread. Done even for control/meta messages so
+        # the notes that share their beat stay anchored to the same jitter.
+        if getattr(msg, "time", 0) > 0:
+            self._onJitter = random.uniform(-timing, timing) if timing > 0 else 0.0
+            self._offJitter = random.uniform(-timing, timing) if timing > 0 else 0.0
+            self._onRoll = 0.0
+            self._offRoll = 0.0
+
+        if getattr(msg, "is_meta", False) or not hasattr(msg, "note"):
             return 0.0
 
         isOn = msg.type == "note_on" and getattr(msg, "velocity", 0) > 0
@@ -82,20 +109,15 @@ class Humanizer:
         if not (isOn or isOff):
             return 0.0
 
-        # a message with time > 0 starts a new beat cluster -> reset roll counters
-        if getattr(msg, "time", 0) > 0:
-            self._onIdx = 0
-            self._offIdx = 0
-
-        off = 0.0
-        if timing > 0:
-            off += random.uniform(-timing, timing)
+        cap = _MAX_ROLL_MS / 1000.0
         if isOn:
+            off = self._onJitter + self._onRoll
             if chord > 0:
-                off += self._onIdx * chord
-            self._onIdx += 1
+                self._onRoll = min(cap, self._onRoll + random.uniform(0.6 * chord, 1.4 * chord))
+            return off
         else:
+            # releases breathe even more than presses — lift a touch looser
+            off = self._offJitter + self._offRoll
             if chord > 0:
-                off += self._offIdx * chord
-            self._offIdx += 1
-        return off
+                self._offRoll = min(cap, self._offRoll + random.uniform(0.7 * chord, 1.6 * chord))
+            return off
