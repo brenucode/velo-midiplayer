@@ -1897,9 +1897,17 @@
       }
       el.style.bottom = ((st.t - sgPlayhead) * pps) + "px";
     }
-    // flash keys as notes cross the hit line
+    // flash keys (and play the piano) as notes cross the hit line
     while (sgFlashIx < sgSteps.length && sgSteps[sgFlashIx].t <= sgPlayhead) {
-      sgSteps[sgFlashIx].notes.forEach((n) => { const k = sgKeyEls[n.note]; if (k) { k.classList.add("hit"); setTimeout(() => k.classList.remove("hit"), 170); } });
+      // only sound notes that just crossed — a big forward seek can catch up
+      // many steps at once, and we don't want to blast them all
+      const fresh = sgPlaying && (sgPlayhead - sgSteps[sgFlashIx].t) < 0.25;
+      sgSteps[sgFlashIx].notes.forEach((n) => {
+        const k = sgKeyEls[n.note]; if (k) { k.classList.add("hit"); setTimeout(() => k.classList.remove("hit"), 170); }
+        // when the Settings sound is on, the backend already voices the song
+        // (mic illusion); otherwise play the stage piano ourselves
+        if (fresh && !soundOn) prPlayNote(n.note);
+      });
       const tile = sgTiles.get(sgFlashIx); if (tile) tile.classList.add("ry-hit");
       sgFlashIx++;
     }
@@ -1910,6 +1918,9 @@
     sgOpen = true;
     $("#stageOverlay").hidden = false;
     document.body.classList.add("stage-on");
+    // prep the piano so the stage can voice notes even when the mic-illusion
+    // sound is off (the click that opened the stage is our audio gesture)
+    ensureCtx(); loadPiano();
     stageStateChanged();
     if (state && state.isRunning && state.playingFile && state.playingFile !== sgPath) stageLoad(state.playingFile);
     sgLastWall = performance.now();
