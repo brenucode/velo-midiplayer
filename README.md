@@ -18,6 +18,18 @@
 
 **Velo** started from a simple itch: play MIDI in an interface that doesn't look like 2009 software. A clean player, an online song library, a practice mode that feels like a little game, and a stage mode to look good on stream. No bloat, no annoying install — open it and it works.
 
+> ## ⚠️ "My antivirus says it's a virus!" — It isn't. Please read this first.
+>
+> Velo is an **unsigned app**, so Windows SmartScreen and some antivirus tools flag it as "unknown" and may warn you or quarantine a file. **This is a false positive** — a standard precaution for any new program that hasn't built up reputation yet, not actual malware.
+>
+> **Why isn't it signed?** Removing the warning requires a **code-signing certificate that costs around US$300 per year**. For a free project made in my spare time that isn't worth it — so you get the warning instead.
+>
+> **What to do:**
+> - **"Windows protected your PC"** → click **More info → Run anyway**.
+> - **Antivirus deleted a file and Velo won't open?** → restore it from quarantine (commonly `Velo\_internal\pythonnet\runtime\Python.Runtime.dll`) and add the Velo folder as an exception.
+> - **Still blocked?** → right-click the `.zip` → **Properties** → tick **Unblock** → extract again.
+> - Peace of mind: **Velo is fully open-source (GPL v3)** — you can read every line right here in this repo, or build the `.exe` yourself.
+
 ## 🆕 What's new in v1.1
 
 - 🎭 **Humanizer** — playback no longer sounds like a robot. A profile (Subtle / Moderate / Loose) plus fine sliders add human imperfection: chords roll instead of hitting in unison, the timing of each note and release wanders, the tempo gently breathes (rubato), and the force varies — re-randomised every chord so it never repeats. Your settings are saved.
@@ -54,6 +66,10 @@
 - 🥁 **Drums** and ⌨️ **MIDI → Keys** — turn a MIDI controller into a keyboard in real time.
 - 🔊 **Real sound** — several **piano** models (Grand, Bright, Electric…) plus a **Cherry MX** mechanical-keyboard sound.
 - 🏆 **Records** per song · 🖥️ **responsive** layout + **fullscreen (F11)**.
+
+## 🎼 Companion app — VeloScribe
+
+Got a song with no MIDI? **[VeloScribe](https://github.com/brenucode/veloscribe)** is Velo's companion tool: drop an audio file (or paste a link) and it transcribes it into a clean piano `.mid` — saved straight into Velo's queue. Same look, same family, made by the same person.
 
 ## ⬇️ Download (ready to use)
 
