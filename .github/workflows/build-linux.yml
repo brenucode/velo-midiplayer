@@ -149,12 +149,18 @@ jobs:
           RUN
           chmod +x "$APP/AppRun"
 
-      - name: Build AppImage
+      - name: Build AppImage (FUSE-less static runtime)
         run: |
           set -e
           wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
           chmod +x appimagetool
-          ARCH=x86_64 ./appimagetool --no-appstream Velo.AppDir Velo-x86_64.AppImage
+          # The STATIC type-2 runtime has libfuse linked IN and auto-falls back
+          # to extract-and-run when the kernel/fusermount isn't available — so
+          # the resulting AppImage NO LONGER needs libfuse.so.2 on the user's
+          # machine (fixes the "AppImages require FUSE" error on Fedora etc).
+          wget -q https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-x86_64 -O runtime-x86_64
+          ARCH=x86_64 ./appimagetool --no-appstream --runtime-file runtime-x86_64 \
+            Velo.AppDir Velo-x86_64.AppImage
 
       - name: Upload AppImage as build artifact
         uses: actions/upload-artifact@v4
