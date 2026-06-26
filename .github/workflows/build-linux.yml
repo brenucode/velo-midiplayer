@@ -66,10 +66,16 @@ jobs:
           datas = [('velo/web', 'velo/web'),
                    ('assets/defaultConfig.json', 'assets')]
           binaries = []
+          # pynput loads its platform backend dynamically (pynput.keyboard._xorg
+          # on X11) — PyInstaller can't see that, so name it explicitly AND
+          # collect the whole package + Xlib (the X11 backend's dependency,
+          # which also imports submodules dynamically).
           hiddenimports = ['mido.backends.rtmidi', 'psutil',
-                           'gi', 'gi.repository.Gtk', 'gi.repository.WebKit2']
+                           'gi', 'gi.repository.Gtk', 'gi.repository.WebKit2',
+                           'pynput.keyboard._xorg', 'pynput.mouse._xorg',
+                           'pynput.keyboard._uinput', 'pynput.mouse._uinput']
 
-          for pkg in ('webview', 'gi'):
+          for pkg in ('webview', 'gi', 'pynput', 'Xlib'):
               d, b, h = collect_all(pkg)
               datas += d; binaries += b; hiddenimports += h
 
