@@ -8,7 +8,7 @@ name: build-linux
 #                        Linux tester before cutting a release)
 on:
   push:
-    tags: ['v*']
+    tags: ['v*', 'linux-test-*']   # v* = real release; linux-test-* = test build
   workflow_dispatch:
 
 permissions:
@@ -145,9 +145,13 @@ jobs:
           name: Velo-x86_64.AppImage
           path: Velo-x86_64.AppImage
 
-      # Only when triggered by a version tag: attach it to that GitHub Release.
-      - name: Attach to GitHub Release
+      # On any tag: publish a Release with the AppImage attached so testers get a
+      # public download link. Test tags (linux-test-*) publish as a PRE-RELEASE,
+      # which the in-app updater ignores (it only reads the latest stable).
+      - name: Publish Release with the AppImage
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: Velo-x86_64.AppImage
+          name: ${{ github.ref_name }}
+          prerelease: ${{ contains(github.ref_name, 'test') }}
