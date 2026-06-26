@@ -4,15 +4,24 @@ replacement for the old Tkinter-coupled midiPlayerFunctions.py.
 """
 
 import os
+import re
 import time
 import datetime
 import threading
 import logging
 
 import mido
-import keyboard
+# `keyboard` drives the global play/pause hotkeys on Windows. On Linux it needs
+# root (reads /dev/input), so there we use pynput global hotkeys instead (see
+# bindHotkeys). Guard the import so a missing/unavailable package never crashes
+# startup on a platform that doesn't use it.
+try:
+    import keyboard
+except Exception:
+    keyboard = None
 
 from velo.backend import config as configuration
+from velo.backend import platcompat
 from velo.backend import qwerty_engine
 from velo.backend import output_engine
 from velo.backend.logbus import LogBus, NoteBus
@@ -140,6 +149,15 @@ class Player:
                 output_engine.playbackSpeed = self.speed / 100.0
                 output_engine.startPlayback(path, device, updateCallback=self._timelineCallback, startOffset=offset)
             else:
+                # the QWERTY engine types the song into whatever app is focused.
+                # On Wayland the compositor blocks one app typing into another,
+                # so warn the user (once) and point them to an X11 session.
+                if not platcompat.can_synthesize_input() and not getattr(self, "_warnedNoType", False):
+                    self._warnedNoType = True
+                    self.log("Heads up: typing notes into other apps needs an "
+                             "X11 session — on Wayland it won't reach the game/site. "
+                             "Switch to 'MIDI output' mode, or log in with X11. "
+                             "(In-app sound, Practice and Stage still work.)")
                 qwerty_engine.playbackSpeed = self.speed / 100.0
                 qwerty_engine.startPlayback(path, updateCallback=self._timelineCallback, startOffset=offset)
         except Exception as e:
@@ -389,6 +407,15 @@ class Player:
             hk.get("prevtrack", "f6"): self.prevTrack,
             hk.get("nexttrack", "f7"): self.nextTrack,
         }
+        if platcompat.IS_WINDOWS:
+            self._bindHotkeysWindows(mapping)
+        else:
+            self._bindHotkeysPynput(mapping)
+
+    def _bindHotkeysWindows(self, mapping):
+        """Windows: the `keyboard` library (low-level hook, no admin needed)."""
+        if keyboard is None:
+            return
         try:
             for key, fn in mapping.items():
                 handler = keyboard.on_press_key(str(key).lower(), lambda e, fn=fn: fn())
@@ -396,10 +423,50 @@ class Player:
         except Exception as e:
             logger.warning(f"hotkey bind failed: {e}")
 
+    @staticmethod
+    def _pynputHotkey(key):
+        """Translate a saved hotkey ('f1', 'a', 'space') into pynput's
+        GlobalHotKeys syntax ('<f1>', 'a', '<space>')."""
+        k = str(key).strip().lower()
+        if not k:
+            return None
+        if re.fullmatch(r"f([1-9]|1[0-2])", k):   # function keys
+            return f"<{k}>"
+        if len(k) == 1:                            # single character
+            return k
+        return f"<{k}>"                            # named key (space, esc, …)
+
+    def _bindHotkeysPynput(self, mapping):
+        """Linux/macOS: pynput global hotkeys. Works without root; on Linux this
+        needs an X11 session (Wayland won't deliver global keys — that's a
+        compositor restriction, so the in-app buttons still work either way)."""
+        try:
+            from pynput import keyboard as pk
+        except Exception as e:
+            logger.warning(f"hotkey bind unavailable (pynput): {e}")
+            return
+        combos = {}
+        for key, fn in mapping.items():
+            canon = self._pynputHotkey(key)
+            if canon:
+                combos[canon] = (lambda fn=fn: fn())
+        if not combos:
+            return
+        try:
+            listener = pk.GlobalHotKeys(combos)
+            listener.daemon = True
+            listener.start()
+            self._hotkeyHandlers.append(listener)
+        except Exception as e:
+            logger.warning(f"hotkey bind failed (pynput): {e}")
+
     def unbindHotkeys(self):
         for h in list(self._hotkeyHandlers):
             try:
-                keyboard.unhook(h)
+                if hasattr(h, "stop"):        # pynput listener
+                    h.stop()
+                elif keyboard is not None:    # `keyboard` hook handle
+                    keyboard.unhook(h)
             except Exception:
                 pass
         self._hotkeyHandlers.clear()

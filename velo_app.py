@@ -29,19 +29,22 @@ import threading
 # This lets the Online Sequencer helper window clear its Cloudflare check while
 # staying completely invisible (a throttled hidden window never solves it), and
 # keeps the main window's playback loops smooth while running in the background.
-# Must be set before any WebView2 starts.
-os.environ.setdefault(
-    "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
-    "--disable-background-timer-throttling "
-    "--disable-backgrounding-occluded-windows "
-    "--disable-renderer-backgrounding",
-)
+# Must be set before any WebView2 starts. WebView2 is Windows-only; on Linux
+# (WebKitGTK) / macOS the flag is irrelevant, so only set it there.
+if os.name == "nt":
+    os.environ.setdefault(
+        "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
+        "--disable-background-timer-throttling "
+        "--disable-backgrounding-occluded-windows "
+        "--disable-renderer-backgrounding",
+    )
 
 import webview
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from velo.backend import config as configuration
+from velo.backend import platcompat
 from velo.backend import hub
 from velo.backend import onlineseq
 from velo.backend import audioname
@@ -116,6 +119,24 @@ def _validGeom(g):
     if x <= -10000 or y <= -10000 or x > 15000 or y > 15000:
         return False
     return True
+
+
+def _onScreen(x, y, w, h):
+    """True only if the rect overlaps a CURRENTLY CONNECTED monitor. Catches a
+    geometry saved on a monitor that's no longer plugged in / a phantom one —
+    which is exactly what makes the window reopen invisible off-screen."""
+    try:
+        import ctypes
+
+        class _R(ctypes.Structure):
+            _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long),
+                        ("right", ctypes.c_long), ("bottom", ctypes.c_long)]
+
+        r = _R(int(x), int(y), int(x) + int(w), int(y) + int(h))
+        # MONITOR_DEFAULTTONULL = 0 → returns NULL if the rect hits no monitor
+        return bool(ctypes.windll.user32.MonitorFromRect(ctypes.byref(r), 0))
+    except Exception:
+        return True  # if the check fails, don't block (fail open)
 
 
 def emit(event, payload):
@@ -451,6 +472,18 @@ class Api:
                 pass
         return value
 
+    # ----- platform ---------------------------------------------------------
+    def platformInfo(self):
+        """Tell the UI what OS/session we're on so it can warn (e.g. on Wayland
+        the 'type into another app' feature can't work — see platcompat)."""
+        return {
+            "os": ("windows" if platcompat.IS_WINDOWS
+                   else "mac" if platcompat.IS_MAC else "linux"),
+            "session": platcompat.session_type(),
+            "isWayland": platcompat.IS_WAYLAND,
+            "canType": platcompat.can_synthesize_input(),
+        }
+
     # ----- window controls (frameless) -------------------------------------
     def minimize(self):
         try:
@@ -502,6 +535,33 @@ class Api:
             pass
         return FULLSCREEN
 
+    def startResize(self, edge):
+        """Begin a NATIVE window resize from a frameless edge/corner grip — lets
+        the user drag the borders to resize even though the window has no native
+        frame. Hands off to Windows' own size loop (smooth, respects min_size)."""
+        if FULLSCREEN:
+            return
+        # edge → Win32 hit-test code (HTLEFT..HTBOTTOMRIGHT)
+        ht = {"left": 0xA, "right": 0xB, "top": 0xC, "topleft": 0xD,
+              "topright": 0xE, "bottom": 0xF, "bottomleft": 0x10,
+              "bottomright": 0x11}.get(edge)
+        if ht is None:
+            return
+        try:
+            import ctypes
+            native = WINDOW.native
+            hwnd = int(native.Handle.ToInt64())
+            from System import Action
+
+            def go():
+                ctypes.windll.user32.ReleaseCapture()
+                # WM_NCLBUTTONDOWN = 0x00A1 → starts the native resize tracking
+                ctypes.windll.user32.SendMessageW(hwnd, 0x00A1, ht, 0)
+
+            native.BeginInvoke(Action(go))
+        except Exception:
+            pass
+
     def close(self):
         global SHUTTING_DOWN
         SHUTTING_DOWN = True
@@ -531,7 +591,9 @@ def main():
     kwargs = dict(width=w, height=h)
     # only honour a saved position if it lands somewhere visible (never the
     # -32000 minimize sentinel) — otherwise let pywebview centre the window
-    if "x" in saved and "y" in saved and _validGeom({"x": saved["x"], "y": saved["y"], "w": w, "h": h}):
+    if ("x" in saved and "y" in saved
+            and _validGeom({"x": saved["x"], "y": saved["y"], "w": w, "h": h})
+            and _onScreen(saved["x"], saved["y"], w, h)):
         kwargs["x"] = int(saved["x"])
         kwargs["y"] = int(saved["y"])
 
@@ -572,6 +634,11 @@ def main():
 
     def onLoaded():
         logger.info("UI loaded OK (webview rendered, bridge alive)")
+        # let the UI know the platform/session up front (Wayland banner, etc.)
+        try:
+            emit("platform", api.platformInfo())
+        except Exception:
+            pass
         try:
             PLAYER.bindHotkeys()
         except Exception:
@@ -607,7 +674,8 @@ def main():
                 DRUMS.stop()
             if INPUT and INPUT.running:
                 INPUT.stop()
-            if _validGeom(GEOM):
+            if _validGeom(GEOM) and _onScreen(GEOM.get("x", 0), GEOM.get("y", 0),
+                                              GEOM.get("w", 0), GEOM.get("h", 0)):
                 win = configuration.configData.setdefault("appUI", {}).setdefault("window", {})
                 win.update(GEOM)
                 configuration.save()

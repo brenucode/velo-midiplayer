@@ -11,6 +11,8 @@ import sys
 import json
 import copy
 
+from velo.backend import platcompat
+
 APP_NAME = "Velo"
 # Single source of truth for the running version (keep in sync with version.txt).
 # The updater compares this against the latest GitHub release tag.
@@ -22,8 +24,9 @@ def resourcePath(relativePath):
     return os.path.join(base, relativePath)
 
 
+# Windows/macOS: ~/Documents/Velo (unchanged). Linux: XDG (~/.local/share/Velo).
 documentsDir = os.path.join(os.path.expanduser("~"), "Documents")
-baseDirectory = os.path.join(documentsDir, APP_NAME)
+baseDirectory = platcompat.data_dir(APP_NAME)
 os.makedirs(baseDirectory, exist_ok=True)
 
 configPath = os.path.join(baseDirectory, "config.json")

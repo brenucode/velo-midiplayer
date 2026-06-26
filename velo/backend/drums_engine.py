@@ -8,7 +8,13 @@ import mido
 import time
 import random
 import threading
-import keyboard
+
+# `keyboard` is imported for parity with the other engines but drums always use
+# pynput; guard it so a Linux box without the (root-only) backend still loads.
+try:
+    import keyboard  # noqa: F401
+except Exception:
+    keyboard = None
 
 from pynput import keyboard as pynputKeyboard
 from velo.backend import config as configuration

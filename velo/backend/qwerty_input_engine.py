@@ -5,9 +5,14 @@ keyboard keys. Decoupled from Tkinter: ``log`` and ``onNote`` are injectable.
 """
 
 import re
-import keyboard
 import mido
 import threading
+
+# optional `keyboard` backend (default is pynput); needs root on Linux → guard.
+try:
+    import keyboard
+except Exception:
+    keyboard = None
 
 from pynput import keyboard as pynputKeyboard
 from velo.backend import config as configuration
@@ -48,7 +53,7 @@ def logKeys(action, key):
         log(f"{action}: {keyName}")
 
 
-if configuration.configData["midiToQwerty"]["inputModule"] == "keyboard":
+if configuration.configData["midiToQwerty"]["inputModule"] == "keyboard" and keyboard is not None:
     def press(key):
         keyboard.press(key)
         logKeys("press", key)

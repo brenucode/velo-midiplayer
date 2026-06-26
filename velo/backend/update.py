@@ -11,13 +11,13 @@ visible step.
 
 import os
 import re
-import subprocess
 import webbrowser
 import logging
 
 import requests
 
 from velo.backend import config as configuration
+from velo.backend import platcompat
 
 logger = logging.getLogger("velo.update")
 
@@ -41,9 +41,11 @@ def checkLatest():
         r.raise_for_status()
         d = r.json()
         tag = d.get("tag_name", "") or ""
+        # pick the asset for THIS platform: AppImage on Linux, .zip on Windows.
+        wanted = (".appimage",) if platcompat.IS_LINUX else (".zip",)
         asset = ""
         for a in d.get("assets", []) or []:
-            if str(a.get("name", "")).lower().endswith(".zip"):
+            if str(a.get("name", "")).lower().endswith(wanted):
                 asset = a.get("browser_download_url", "") or ""
                 break
         newer = _parseVer(tag) > _parseVer(configuration.APP_VERSION)
@@ -73,8 +75,9 @@ def openReleasePage(url):
 
 
 def downloadZip(assetUrl, tag=""):
-    """Download the release zip into the user's Downloads folder and reveal it.
-    Only github-hosted URLs are accepted."""
+    """Download the release asset into the user's Downloads folder and reveal it.
+    Only github-hosted URLs are accepted. The asset is the .zip on Windows and
+    the .AppImage on Linux (named to match so the user finds it easily)."""
     try:
         from urllib.parse import urlparse
         host = (urlparse(assetUrl).hostname or "").lower()
@@ -82,9 +85,14 @@ def downloadZip(assetUrl, tag=""):
                 or host.endswith("githubusercontent.com")):
             return {"ok": False, "error": "refusing non-github URL"}
 
-        downloads = os.path.join(os.path.expanduser("~"), "Downloads")
+        downloads = platcompat.downloads_dir()
         os.makedirs(downloads, exist_ok=True)
-        name = re.sub(r"[^\w\-.]+", "_", f"Velo-win-{tag}.zip" if tag else "Velo-win.zip")
+        # keep the asset's real extension; default per-platform if the URL has none
+        ext = os.path.splitext(urlparse(assetUrl).path)[1].lower()
+        if ext not in (".zip", ".appimage"):
+            ext = ".AppImage" if platcompat.IS_LINUX else ".zip"
+        stem = "Velo-linux" if platcompat.IS_LINUX else "Velo-win"
+        name = re.sub(r"[^\w\-.]+", "_", f"{stem}-{tag}{ext}" if tag else f"{stem}{ext}")
         path = os.path.join(downloads, name)
 
         r = requests.get(assetUrl, headers={"User-Agent": "Velo-Updater"},
@@ -95,13 +103,14 @@ def downloadZip(assetUrl, tag=""):
                 if chunk:
                     f.write(chunk)
 
-        try:
-            subprocess.Popen(["explorer", "/select,", os.path.normpath(path)])
-        except Exception:
+        # make a downloaded AppImage executable so the user can just run it
+        if platcompat.IS_LINUX and ext.lower() == ".appimage":
             try:
-                os.startfile(downloads)  # noqa: P204 (Windows-only)
+                os.chmod(path, 0o755)
             except Exception:
                 pass
+
+        platcompat.reveal(path)
         return {"ok": True, "path": path}
     except Exception as e:
         logger.warning("update download failed: %s", e)

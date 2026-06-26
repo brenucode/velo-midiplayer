@@ -6,11 +6,17 @@ The note-simulation logic is unchanged from the original.
 """
 
 import re
-import keyboard
 import mido
 import threading
 import time
 import random
+
+# `keyboard` is an optional input backend (inputModule == "keyboard"); the
+# default is pynput. On Linux `keyboard` needs root, so guard the import.
+try:
+    import keyboard
+except Exception:
+    keyboard = None
 
 from pynput import keyboard as pynputKeyboard
 from velo.backend import config as configuration
@@ -51,7 +57,7 @@ def logKeys(action, key):
         log(f"{action}: {keyName}")
 
 
-if configuration.configData["midiPlayer"]["inputModule"] == "keyboard":
+if configuration.configData["midiPlayer"]["inputModule"] == "keyboard" and keyboard is not None:
     def press(key):
         keyboard.press(key)
         logKeys("press", key)
