@@ -6,9 +6,15 @@ name: build-linux
 #   * "Run workflow"   → builds and uploads the AppImage as a downloadable
 #                        artifact only (great for handing a test build to a
 #                        Linux tester before cutting a release)
+# NOTE: the AppImage is PARKED. Bundling WebKit2GTK into a single binary is the
+# fragile part of Linux packaging (we hit "Namespace WebKit2 not available"); the
+# supported Linux path is the source installer (install-linux.sh), which uses the
+# system WebKit and Just Works. This workflow stays only as a manual experiment —
+# it deliberately does NOT run on real version tags, so a real release never gets
+# a half-working AppImage attached.
 on:
   push:
-    tags: ['v*', 'linux-test-*']   # v* = real release; linux-test-* = test build
+    tags: ['linux-test-*']   # experiment-only test builds
   workflow_dispatch:
 
 permissions:

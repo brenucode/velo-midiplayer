@@ -20,7 +20,14 @@ APP_VERSION = "1.1"
 
 
 def resourcePath(relativePath):
-    base = getattr(sys, "_MEIPASS", os.path.abspath("."))
+    # Frozen: PyInstaller's bundle dir. From source: the repo root (three levels
+    # up from velo/backend/config.py) — NOT the current working directory, so
+    # bundled assets resolve no matter where Velo is launched from (e.g. a
+    # desktop-menu launcher whose cwd is $HOME, not the app folder).
+    if hasattr(sys, "_MEIPASS"):
+        base = sys._MEIPASS
+    else:
+        base = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     return os.path.join(base, relativePath)
 
 
