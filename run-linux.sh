@@ -25,16 +25,17 @@ if [ ! -d "$VENV" ]; then
   "$PY" -m venv --system-site-packages "$VENV"
 fi
 
-# shellcheck disable=SC1091
-source "$VENV/bin/activate"
+# Call the venv's python directly — `source activate` under `set -u` can abort
+# on an unbound variable inside the activate script.
+VPY="$VENV/bin/python"
 
-python -m pip install --upgrade pip >/dev/null
+"$VPY" -m pip install --upgrade pip >/dev/null
 echo "Installing/refreshing Python dependencies…"
-pip install -r requirements-linux.txt
+"$VPY" -m pip install -r requirements-linux.txt
 
 # Sanity check: can we reach the WebKitGTK binding? (the #1 thing people miss)
-if ! python -c "import gi; gi.require_version('WebKit2','4.1'); from gi.repository import WebKit2" 2>/dev/null \
-   && ! python -c "import gi; gi.require_version('WebKit2','4.0'); from gi.repository import WebKit2" 2>/dev/null; then
+if ! "$VPY" -c "import gi; gi.require_version('WebKit2','4.1'); from gi.repository import WebKit2" 2>/dev/null \
+   && ! "$VPY" -c "import gi; gi.require_version('WebKit2','4.0'); from gi.repository import WebKit2" 2>/dev/null; then
   echo
   echo "WARNING: WebKit2GTK (gir1.2-webkit2 / webkit2gtk) doesn't seem installed." >&2
   echo "         The window won't open without it — see README-LINUX.md." >&2
@@ -52,4 +53,4 @@ if [ "${XDG_SESSION_TYPE:-}" = "wayland" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; the
 fi
 
 echo "Starting Velo…"
-exec python velo_app.py
+exec "$VPY" velo_app.py

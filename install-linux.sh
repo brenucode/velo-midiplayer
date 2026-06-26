@@ -52,19 +52,20 @@ say "Setting up the Python environment…"
 if [ ! -d "$VENV" ]; then
     python3 -m venv --system-site-packages "$VENV"
 fi
-# shellcheck disable=SC1091
-source "$VENV/bin/activate"
-python -m pip install --upgrade pip wheel >/dev/null
+# Call the venv's python directly instead of `source activate` — activating
+# under `set -u` can abort on an unbound variable inside the activate script.
+VPY="$VENV/bin/python"
+"$VPY" -m pip install --upgrade pip wheel >/dev/null
 
 say "Installing Velo's Python dependencies…"
-pip install pywebview==6.2.1 mido==1.3.3 pynput==1.8.2 requests==2.34.2 psutil==7.2.2
+"$VPY" -m pip install pywebview==6.2.1 mido==1.3.3 pynput==1.8.2 requests==2.34.2 psutil==7.2.2
 # python-rtmidi powers the optional "MIDI output" mode and may need to compile.
 # If it can't, Velo still runs fine (default playback + in-app sound + practice).
-pip install python-rtmidi==1.5.8 \
+"$VPY" -m pip install python-rtmidi==1.5.8 \
     || warn "python-rtmidi skipped — 'MIDI output' mode off; everything else works."
 
 # sanity check: can we actually reach GTK + WebKit before we claim success?
-if python - <<'PY'
+if "$VPY" - <<'PY'
 import gi
 ok = False
 for v in ("4.1", "4.0"):
