@@ -25,7 +25,6 @@ def resourcePath(relativePath):
 
 
 # Windows/macOS: ~/Documents/Velo (unchanged). Linux: XDG (~/.local/share/Velo).
-documentsDir = os.path.join(os.path.expanduser("~"), "Documents")
 baseDirectory = platcompat.data_dir(APP_NAME)
 os.makedirs(baseDirectory, exist_ok=True)
 
