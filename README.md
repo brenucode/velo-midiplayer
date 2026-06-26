@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-1c1c23?style=flat-square" />
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-1c1c23?style=flat-square" />
   <img src="https://img.shields.io/badge/version-v1.1-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/license-GPL%20v3-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/made%20by-brenu-1c1c23?style=flat-square" />
@@ -32,6 +32,7 @@
 
 ## 🆕 What's new in v1.1
 
+- 🐧 **Now runs on Linux** — Fedora, Ubuntu/Debian, Arch and openSUSE. One-command install that adds Velo to your apps menu (see [Linux](#-linux) below). Uses your system's WebKit, so it just works.
 - 🎭 **Humanizer** — playback no longer sounds like a robot. A profile (Subtle / Moderate / Loose) plus fine sliders add human imperfection: chords roll instead of hitting in unison, the timing of each note and release wanders, the tempo gently breathes (rubato), and the force varies — re-randomised every chord so it never repeats. Your settings are saved.
 - 🌐 **Online Sequencer in the MIDI Hub** — search and download from [onlinesequencer.net](https://onlinesequencer.net) right inside Velo, alongside nanoMIDI and BitMidi.
 - ▦ **Stage now plays the piano** — the visualizer voices the song as the notes cross, not just light up.
@@ -91,6 +92,20 @@ Velo automatically removes the "downloaded from the internet" mark from its own 
 - **Missing .NET Framework** — on stripped Windows editions (N / LTSC), install the free **.NET Framework 4.8** from Microsoft.
 
 </details>
+
+## 🐧 Linux
+
+Velo runs on Linux too — **Fedora, Ubuntu/Debian, Arch, openSUSE**. It uses your system's WebKit, so it's a quick one-time setup in a terminal:
+
+```bash
+git clone https://github.com/brenucode/velo-midiplayer.git
+cd velo-midiplayer
+./install-linux.sh
+```
+
+The installer pulls the libraries it needs, sets everything up, and adds **Velo** to your applications menu — then just search **"Velo"** and launch it like any app (or run `velo`). Full guide + troubleshooting: **[README-LINUX.md](README-LINUX.md)**.
+
+> The "type the song into another app" feature (game pianos like Roblox / Virtual Piano) needs an **X11 / Xorg** session — Wayland blocks app-to-app typing. Everything else (player, sound, Practice, Stage) works on both.
 
 ## ⌨️ Global hotkeys
 
@@ -167,6 +182,8 @@ scripts\build-velo-win.bat
 ```
 
 The app lands in `dist\Velo\Velo.exe`.
+
+**On Linux**, just run `./run-linux.sh` (or `./install-linux.sh` to also add it to your apps menu) — see [README-LINUX.md](README-LINUX.md) for the system packages it needs.
 
 ## 🙏 Credits & License
 
