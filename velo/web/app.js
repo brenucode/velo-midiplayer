@@ -2105,6 +2105,16 @@
     $("#winMax").addEventListener("click", () => call("maximize"));
     $("#winClose").addEventListener("click", () => call("close"));
 
+    // Frameless resize grips → hand off to Windows' native resize loop. Don't
+    // capture the pointer here, or the OS loop won't receive the drag.
+    document.querySelectorAll(".rsz").forEach((g) => {
+      g.addEventListener("pointerdown", (e) => {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        call("startResize", g.dataset.edge);
+      });
+    });
+
     const scrub = $("#scrub");
     const scrubRatio = (e) => {
       const r = scrub.getBoundingClientRect();
