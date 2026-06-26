@@ -38,6 +38,14 @@ if os.name == "nt":
         "--disable-backgrounding-occluded-windows "
         "--disable-renderer-backgrounding",
     )
+elif sys.platform.startswith("linux"):
+    # WebKitGTK can stop repainting and the page goes blank ("the UI vanishes")
+    # on several GPU/driver combos — notably with the newer DMABUF renderer on
+    # recent distros (Fedora). Disabling the DMABUF renderer and accelerated
+    # compositing keeps the page reliably painted. Must be set before WebKitGTK
+    # starts (i.e. before `import webview`).
+    os.environ.setdefault("WEBKIT_DISABLE_DMABUF_RENDERER", "1")
+    os.environ.setdefault("WEBKIT_DISABLE_COMPOSITING_MODE", "1")
 
 import webview
 
