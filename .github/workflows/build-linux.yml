@@ -72,12 +72,13 @@ jobs:
           # which also imports submodules dynamically).
           hiddenimports = ['mido.backends.rtmidi', 'psutil',
                            'gi', 'gi.repository.Gtk', 'gi.repository.WebKit2',
-                           # WebKit2's own gi dependencies — bundling their
-                           # typelibs avoids a runtime "Namespace not available".
+                           # WebKit2's single-version gi deps (safe to name).
+                           # Soup/JavaScriptCore are intentionally NOT listed:
+                           # the WebKit2 hook already pulls them, and naming them
+                           # risks a version-ambiguity failure at analysis time.
                            'gi.repository.Gdk', 'gi.repository.GdkPixbuf',
                            'gi.repository.Gio', 'gi.repository.GLib',
                            'gi.repository.GObject', 'gi.repository.Pango',
-                           'gi.repository.Soup', 'gi.repository.JavaScriptCore',
                            'pynput.keyboard._xorg', 'pynput.mouse._xorg',
                            'pynput.keyboard._uinput', 'pynput.mouse._uinput']
 
@@ -158,6 +159,11 @@ jobs:
           # or the app dies on load.
           export WEBKIT_EXEC_PATH="$BIN/webkit2gtk-4.0"
           export WEBKIT_INJECTED_BUNDLE_PATH="$BIN/webkit2gtk-4.0/injected-bundle"
+          # Inside an AppImage the WebKit web process can't set up its bubblewrap
+          # sandbox (no access to the helper / nested namespaces) — this is THE
+          # classic "blank window / crash on load" cause. Disabling the sandbox
+          # is the documented fix for WebKitGTK apps shipped as AppImage.
+          export WEBKIT_DISABLE_SANDBOX=1
           # GI_TYPELIB_PATH is set automatically by PyInstaller's gi runtime hook.
           exec "$BIN/Velo" "$@"
           RUN
