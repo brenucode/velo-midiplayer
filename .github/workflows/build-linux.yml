@@ -72,6 +72,12 @@ jobs:
           # which also imports submodules dynamically).
           hiddenimports = ['mido.backends.rtmidi', 'psutil',
                            'gi', 'gi.repository.Gtk', 'gi.repository.WebKit2',
+                           # WebKit2's own gi dependencies — bundling their
+                           # typelibs avoids a runtime "Namespace not available".
+                           'gi.repository.Gdk', 'gi.repository.GdkPixbuf',
+                           'gi.repository.Gio', 'gi.repository.GLib',
+                           'gi.repository.GObject', 'gi.repository.Pango',
+                           'gi.repository.Soup', 'gi.repository.JavaScriptCore',
                            'pynput.keyboard._xorg', 'pynput.mouse._xorg',
                            'pynput.keyboard._uinput', 'pynput.mouse._uinput']
 
@@ -141,11 +147,19 @@ jobs:
           cat > "$APP/AppRun" <<'RUN'
           #!/bin/bash
           HERE="$(dirname "$(readlink -f "${0}")")"
-          export PATH="$HERE/usr/bin:$PATH"
-          export LD_LIBRARY_PATH="$HERE/usr/bin:$LD_LIBRARY_PATH"
-          # use the host's GTK/WebKit typelibs + the bundled ones
-          export GI_TYPELIB_PATH="$HERE/usr/bin:$GI_TYPELIB_PATH"
-          exec "$HERE/usr/bin/Velo" "$@"
+          BIN="$HERE/usr/bin"
+          export PATH="$BIN:$PATH"
+          # PyInstaller (onedir) keeps the shared libs in _internal; the WebKit
+          # web-process helpers were copied to webkit2gtk-4.0. BOTH the main app
+          # and the WebKitWebProcess it spawns must find these libs.
+          export LD_LIBRARY_PATH="$BIN:$BIN/_internal:$BIN/webkit2gtk-4.0:$LD_LIBRARY_PATH"
+          # tell WebKitGTK where its WebKitWebProcess / NetworkProcess live —
+          # without this the page renderer can't spawn and the window stays blank
+          # or the app dies on load.
+          export WEBKIT_EXEC_PATH="$BIN/webkit2gtk-4.0"
+          export WEBKIT_INJECTED_BUNDLE_PATH="$BIN/webkit2gtk-4.0/injected-bundle"
+          # GI_TYPELIB_PATH is set automatically by PyInstaller's gi runtime hook.
+          exec "$BIN/Velo" "$@"
           RUN
           chmod +x "$APP/AppRun"
 
