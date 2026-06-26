@@ -1,0 +1,153 @@
+name: build-linux
+
+# Builds the Linux AppImage on a real Linux runner — so a Linux machine is NOT
+# needed to ship it. Triggers:
+#   * push a tag  v*   → builds AND attaches the AppImage to that GitHub Release
+#   * "Run workflow"   → builds and uploads the AppImage as a downloadable
+#                        artifact only (great for handing a test build to a
+#                        Linux tester before cutting a release)
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write          # needed to attach the asset to the Release
+
+jobs:
+  appimage:
+    # ubuntu-22.04 → older glibc → the AppImage runs on a wider range of distros.
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # GTK + WebKit2GTK (so PyGObject can build/import) + introspection + ALSA.
+      - name: Install system GTK / WebKit / build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgtk-3-0 gir1.2-gtk-3.0 \
+            libwebkit2gtk-4.0-37 gir1.2-webkit2-4.0 \
+            libgirepository1.0-dev gobject-introspection \
+            libcairo2-dev pkg-config \
+            libasound2 libasound2-dev \
+            python3-dev file desktop-file-utils fuse libfuse2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip wheel
+          # PyGObject built against the system gir; hooks-contrib carries the
+          # PyInstaller hooks that collect the gi typelibs (GTK + WebKit2).
+          pip install pygobject pyinstaller-hooks-contrib
+          pip install -r requirements-linux.txt
+
+      # Linux PyInstaller spec — mirrors Velo.spec but DROPS the Windows-only
+      # bits (comtypes/pycaw/.ico/version) and collects `gi` so GTK/WebKit load.
+      - name: Write Velo-linux.spec
+        run: |
+          cat > Velo-linux.spec <<'SPEC'
+          # -*- mode: python ; coding: utf-8 -*-
+          from PyInstaller.utils.hooks import collect_all
+
+          datas = [('velo/web', 'velo/web'),
+                   ('assets/defaultConfig.json', 'assets')]
+          binaries = []
+          hiddenimports = ['mido.backends.rtmidi', 'psutil',
+                           'gi', 'gi.repository.Gtk', 'gi.repository.WebKit2']
+
+          for pkg in ('webview', 'gi'):
+              d, b, h = collect_all(pkg)
+              datas += d; binaries += b; hiddenimports += h
+
+          a = Analysis(['velo_app.py'], pathex=['.'], binaries=binaries,
+                       datas=datas, hiddenimports=hiddenimports, noarchive=False)
+          pyz = PYZ(a.pure)
+          exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='Velo',
+                    console=False, upx=False)
+          coll = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False,
+                         name='Velo')
+          SPEC
+
+      - name: Build with PyInstaller
+        run: pyinstaller --noconfirm --clean Velo-linux.spec
+
+      # Some webkit2gtk runtime helpers (the web-process binary + injected
+      # bundle) live in libexec and aren't always picked up — copy them in so
+      # the embedded browser can spawn its renderer.
+      - name: Bundle WebKit2GTK runtime helpers (best-effort)
+        run: |
+          set -e
+          for d in /usr/lib/x86_64-linux-gnu/webkit2gtk-4.0 \
+                   /usr/libexec/webkit2gtk-4.0; do
+            if [ -d "$d" ]; then
+              mkdir -p "dist/Velo/$(basename "$d")"
+              cp -r "$d/." "dist/Velo/$(basename "$d")/" || true
+            fi
+          done
+
+      - name: Assemble AppDir
+        run: |
+          set -e
+          APP=Velo.AppDir
+          rm -rf "$APP"
+          mkdir -p "$APP/usr/bin" "$APP/usr/share/applications" \
+                   "$APP/usr/share/icons/hicolor/256x256/apps"
+          cp -r dist/Velo/. "$APP/usr/bin/"
+
+          # icon: convert the .ico to png if possible, else a 1x1 placeholder
+          if command -v convert >/dev/null 2>&1 && [ -f assets/icons/velo.ico ]; then
+            convert "assets/icons/velo.ico[0]" "$APP/usr/share/icons/hicolor/256x256/apps/velo.png" || true
+          fi
+          if [ ! -f "$APP/usr/share/icons/hicolor/256x256/apps/velo.png" ]; then
+            printf '\x89PNG\r\n\x1a\n' > "$APP/velo.png"   # minimal placeholder
+            cp "$APP/velo.png" "$APP/usr/share/icons/hicolor/256x256/apps/velo.png" || true
+          fi
+          cp "$APP/usr/share/icons/hicolor/256x256/apps/velo.png" "$APP/velo.png" 2>/dev/null || true
+
+          cat > "$APP/velo.desktop" <<'DESK'
+          [Desktop Entry]
+          Type=Application
+          Name=Velo
+          Comment=A clean MIDI player with practice studio and stage mode
+          Exec=Velo
+          Icon=velo
+          Categories=Audio;AudioVideo;Music;
+          Terminal=false
+          DESK
+          cp "$APP/velo.desktop" "$APP/usr/share/applications/velo.desktop"
+
+          cat > "$APP/AppRun" <<'RUN'
+          #!/bin/bash
+          HERE="$(dirname "$(readlink -f "${0}")")"
+          export PATH="$HERE/usr/bin:$PATH"
+          export LD_LIBRARY_PATH="$HERE/usr/bin:$LD_LIBRARY_PATH"
+          # use the host's GTK/WebKit typelibs + the bundled ones
+          export GI_TYPELIB_PATH="$HERE/usr/bin:$GI_TYPELIB_PATH"
+          exec "$HERE/usr/bin/Velo" "$@"
+          RUN
+          chmod +x "$APP/AppRun"
+
+      - name: Build AppImage
+        run: |
+          set -e
+          wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
+          chmod +x appimagetool
+          ARCH=x86_64 ./appimagetool --no-appstream Velo.AppDir Velo-x86_64.AppImage
+
+      - name: Upload AppImage as build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Velo-x86_64.AppImage
+          path: Velo-x86_64.AppImage
+
+      # Only when triggered by a version tag: attach it to that GitHub Release.
+      - name: Attach to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Velo-x86_64.AppImage

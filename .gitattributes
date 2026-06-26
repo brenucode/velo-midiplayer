@@ -1,0 +1,5 @@
+# Shell scripts and CI configs must stay LF — a CRLF would break the shebang on
+# Linux (the AppImage build runner and run-linux.sh both rely on this).
+*.sh   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf

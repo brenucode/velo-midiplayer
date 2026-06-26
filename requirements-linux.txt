@@ -1,0 +1,21 @@
+# Velo — Linux runtime dependencies (pywebview + WebKitGTK).
+#
+# The GUI bindings (PyGObject / GTK / WebKit2GTK) come from your DISTRO'S
+# packages, not from pip — see README-LINUX.md. Create the virtualenv with
+#   python3 -m venv --system-site-packages venv-lnx
+# so those system bindings are visible inside the venv (run-linux.sh does this).
+#
+# Windows-only deps are intentionally absent here: pythonnet, pycaw, comtypes
+# (Core Audio / .NET niceties) and `keyboard` (global hotkeys — Linux uses
+# pynput instead, which needs no root). pynput pulls python-xlib automatically
+# on Linux for its X11 backend.
+
+pywebview==6.2.1
+mido==1.3.3
+python-rtmidi==1.5.8
+pynput==1.8.2
+requests==2.34.2
+psutil==7.2.2
+
+# build only (packaging the AppImage — used by CI, harmless locally)
+pyinstaller==6.21.0
