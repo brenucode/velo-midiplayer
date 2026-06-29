@@ -24,6 +24,7 @@ import json
 import base64
 import logging
 import threading
+import socket
 
 # Keep WebView2 timers/rendering alive even when a window is hidden or occluded.
 # This lets the Online Sequencer helper window clear its Cloudflare check while
@@ -582,8 +583,73 @@ class Api:
             pass
 
 
+# ---- single instance ------------------------------------------------------
+# Two Velos running at once = every keystroke/sound fires twice ("extra notes").
+# Guard with a loopback socket: the first instance binds it and holds it for its
+# whole life; a second instance fails to bind, so it knows one is already up. The
+# OS frees the socket automatically on exit/crash, so there are no stale locks.
+_INSTANCE_LOCK = None
+_INSTANCE_PORT = 49517   # fixed, Velo-private loopback port
+
+
+def _acquireSingleInstance():
+    """True if we're the only Velo; False if another instance holds the lock."""
+    global _INSTANCE_LOCK
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.bind(("127.0.0.1", _INSTANCE_PORT))
+        s.listen(1)
+    except OSError:
+        try:
+            s.close()
+        except Exception:
+            pass
+        return False
+    _INSTANCE_LOCK = s   # keep the reference alive for the process lifetime
+    return True
+
+
+def _focusExistingVelo():
+    """Best-effort: bring the already-running Velo window to the front (Windows)."""
+    if os.name != "nt":
+        return
+    try:
+        import ctypes
+        user32 = ctypes.windll.user32
+        hwnd = user32.FindWindowW(None, "Velo")
+        if hwnd:
+            user32.ShowWindow(hwnd, 9)        # SW_RESTORE
+            user32.SetForegroundWindow(hwnd)
+    except Exception:
+        pass
+
+
+def _notifyAlreadyRunning():
+    """Tell the user (who just double-clicked) that Velo is already open."""
+    if os.name == "nt":
+        try:
+            import ctypes
+            # MB_ICONINFORMATION | MB_SETFOREGROUND
+            ctypes.windll.user32.MessageBoxW(
+                0, "Velo is already running.", "Velo", 0x40 | 0x10000)
+        except Exception:
+            pass
+    else:
+        try:
+            sys.stderr.write("Velo is already running.\n")
+        except Exception:
+            pass
+
+
 def main():
     global WINDOW, PLAYER, DRUMS, INPUT
+
+    # single-instance guard — a second Velo would double every note. If one is
+    # already up, focus it and quit before doing any work.
+    if not _acquireSingleInstance():
+        _focusExistingVelo()
+        _notifyAlreadyRunning()
+        return
 
     # remove the "downloaded from the internet" mark from our own files so the
     # .NET/pythonnet bridge loads on a fresh download (must run before start())
