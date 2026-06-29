@@ -319,6 +319,26 @@
     });
   }
 
+  const RF_KEYS = [["speed", "rfSpeed"], ["transpose", "rfTranspose"]];
+
+  function applyRandomFailState(rf) {
+    if (!rf) return;
+    const on = !!rf.enabled;
+    const t = $("#rfToggle");
+    if (t) { t.textContent = on ? "On" : "Off"; t.classList.toggle("on", on); }
+    const box = $("#rfSliders");
+    if (box) { box.style.opacity = on ? "1" : ".4"; box.style.pointerEvents = on ? "" : "none"; }
+    RF_KEYS.forEach(([k, id]) => {
+      const el = $("#" + id);
+      if (el && typeof rf[k] === "number") {
+        const v = Math.round(rf[k]);
+        el.value = v;
+        el.style.setProperty("--fill", v + "%");
+        const lab = $("#" + id + "Val"); if (lab) lab.textContent = v;
+      }
+    });
+  }
+
   function applySoundState(s) {
     if (!s) return;
     soundOn = !!s.enabled;
@@ -398,6 +418,7 @@
     if ("onTop" in s) $("#winPin").classList.toggle("on", !!s.onTop);
     if (s.sound) applySoundState(s.sound);
     if (s.humanize) applyHumanizeState(s.humanize);
+    if (s.randomFail) applyRandomFailState(s.randomFail);
 
     if (queueVisible() && !queueDragging) renderQueue();
 
@@ -2043,6 +2064,23 @@
         $$("#humProfile .seg-opt").forEach((x) => x.classList.remove("active"));
       });
       el.addEventListener("change", () => { const a = api(); if (a && a.setHumanize) a.setHumanize(k, parseInt(el.value)); });
+    });
+
+    const rfTog = $("#rfToggle");
+    if (rfTog) rfTog.addEventListener("click", () => {
+      const on = !rfTog.classList.contains("on");
+      rfTog.classList.toggle("on", on);
+      rfTog.textContent = on ? "On" : "Off";
+      const box = $("#rfSliders"); if (box) { box.style.opacity = on ? "1" : ".4"; box.style.pointerEvents = on ? "" : "none"; }
+      const a = api(); if (a && a.setRandomFail) a.setRandomFail("enabled", on);
+    });
+    RF_KEYS.forEach(([k, id]) => {
+      const el = $("#" + id); if (!el) return;
+      el.addEventListener("input", () => {
+        el.style.setProperty("--fill", el.value + "%");
+        const lab = $("#" + id + "Val"); if (lab) lab.textContent = el.value;
+      });
+      el.addEventListener("change", () => { const a = api(); if (a && a.setRandomFail) a.setRandomFail(k, parseInt(el.value)); });
     });
 
     const ut = $("#updateToast");

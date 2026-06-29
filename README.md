@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-1c1c23?style=flat-square" />
-  <img src="https://img.shields.io/badge/version-v1.1-c8ff4d?style=flat-square&labelColor=1c1c23" />
+  <img src="https://img.shields.io/badge/version-v1.2-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/license-GPL%20v3-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/made%20by-brenu-1c1c23?style=flat-square" />
 </p>
@@ -29,6 +29,10 @@
 > - **Antivirus deleted a file and Velo won't open?** → restore it from quarantine (commonly `Velo\_internal\pythonnet\runtime\Python.Runtime.dll`) and add the Velo folder as an exception.
 > - **Still blocked?** → right-click the `.zip` → **Properties** → tick **Unblock** → extract again.
 > - Peace of mind: **Velo is fully open-source (GPL v3)** — you can read every line right here in this repo, or build the `.exe` yourself.
+
+## 🆕 What's new in v1.2
+
+- 🎲 **Random Fail** — an optional "human who slips" mode (off by default). Turn it on in **Settings** for occasional, believable mistakes: a note that rushes or drags, or one that slips to the wrong key. Two sliders control how often it happens. It's the playful opposite of the Humanizer — and yes, it *intentionally* plays notes that aren't in the file, so keep it subtle.
 
 ## 🆕 What's new in v1.1
 

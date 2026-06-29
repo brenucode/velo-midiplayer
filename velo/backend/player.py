@@ -359,6 +359,21 @@ class Player:
         self._emitState()
         return self.getState()
 
+    def setRandomFail(self, key, value):
+        rf = configuration.configData["midiPlayer"].setdefault(
+            "randomFail", {"enabled": False, "speed": 5.0, "transpose": 5.0}
+        )
+        if key == "enabled":
+            rf["enabled"] = bool(value)
+        elif key in ("speed", "transpose"):
+            try:
+                rf[key] = max(0.0, min(100.0, float(value)))
+            except Exception:
+                return self.getState()
+        configuration.save()
+        self._emitState()
+        return self.getState()
+
     def setSpeed(self, value):
         try:
             value = max(1, min(500, int(value)))
@@ -502,6 +517,7 @@ class Player:
             "onTop": bool(configuration.configData.get("appUI", {}).get("onTop", False)),
             "sound": configuration.configData.get("sound", {"enabled": False, "mode": "piano", "volume": 70, "pack": "brown-local", "piano": "grand"}),
             "humanize": configuration.configData["midiPlayer"].get("humanize", {"on": False, "profile": "moderate", "roll": 43, "timing": 40, "rubato": 29, "velocity": 52}),
+            "randomFail": configuration.configData["midiPlayer"].get("randomFail", {"enabled": False, "speed": 5.0, "transpose": 5.0}),
         }
 
     def _emitState(self):

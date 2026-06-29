@@ -69,7 +69,7 @@
           <span class="nav-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.5M12 18.5V21M21 12h-2.5M5.5 12H3M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8M18.4 18.4l-1.8-1.8M7.4 7.4 5.6 5.6"/></svg></span>
           <span class="nav-label">Settings</span>
         </button>
-        <div class="rail-foot">Velo<span>v1.1</span></div>
+        <div class="rail-foot">Velo<span>v1.2</span></div>
       </nav>
 
       <main class="content">
@@ -450,12 +450,23 @@
             </div>
             <div class="hk-hint">Pick a profile as a starting point, then fine-tune the sliders — your settings are saved and restored next time. <b>Roll</b> = how much chords spread (and re-randomise every chord) · <b>Timing</b> = looseness of each note · <b>Rubato</b> = how much the tempo breathes · <b>Velocity</b> = force variation. Each profile keeps re-randomising so it never repeats. Off = exact mechanical original.</div>
           </div>
+          <div class="card randomfail reveal" style="--d:2">
+            <div class="card-title">Random Fail — play like a human who slips</div>
+            <div class="sound-ctl">
+              <button class="chip" id="rfToggle">Off</button>
+            </div>
+            <div id="rfSliders" style="margin-top:14px;display:flex;flex-direction:column;gap:12px;opacity:.4;pointer-events:none">
+              <div class="sound-vol"><span>Timing slips</span><input type="range" id="rfSpeed" min="0" max="100" value="5" /><span id="rfSpeedVal">5</span></div>
+              <div class="sound-vol"><span>Wrong notes</span><input type="range" id="rfTranspose" min="0" max="100" value="5" /><span id="rfTransposeVal">5</span></div>
+            </div>
+            <div class="hk-hint">Adds occasional <b>human mistakes</b> to playback — the opposite of Humanize. <b>Timing slips</b> = how often a note rushes or drags · <b>Wrong notes</b> = how often a note slips to the wrong key (up or down, by up to an octave). Off = perfect, exact playback. Heads up: this <b>intentionally plays notes that aren't in the file</b>, so keep the sliders low for a subtle, believable effect.</div>
+          </div>
           <div class="card about reveal" style="--d:3">
             <div class="card-title">About</div>
             <div class="about-row">
               <span class="about-mark"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M5 19V5l8 4-8 4" fill="currentColor"/><path d="M14 5v14M19 5v14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span>
               <div>
-                <div class="about-name">Velo <span class="about-ver">v1.1</span></div>
+                <div class="about-name">Velo <span class="about-ver">v1.2</span></div>
                 <div class="about-sub">MIDI player — QWERTY &amp; MIDI output</div>
               </div>
             </div>

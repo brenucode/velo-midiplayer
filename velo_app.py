@@ -258,6 +258,9 @@ class Api:
     def setHumanize(self, key, value):
         return PLAYER.setHumanize(key, value)
 
+    def setRandomFail(self, key, value):
+        return PLAYER.setRandomFail(key, value)
+
     # ----- self-update (check + assisted download, never silent overwrite) --
     def checkUpdate(self):
         from velo.backend import update

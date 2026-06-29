@@ -16,7 +16,7 @@ from velo.backend import platcompat
 APP_NAME = "Velo"
 # Single source of truth for the running version (keep in sync with version.txt).
 # The updater compares this against the latest GitHub release tag.
-APP_VERSION = "1.1"
+APP_VERSION = "1.2"
 
 
 def resourcePath(relativePath):
