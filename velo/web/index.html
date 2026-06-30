@@ -69,7 +69,7 @@
           <span class="nav-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.5M12 18.5V21M21 12h-2.5M5.5 12H3M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8M18.4 18.4l-1.8-1.8M7.4 7.4 5.6 5.6"/></svg></span>
           <span class="nav-label">Settings</span>
         </button>
-        <div class="rail-foot">Velo<span>v1.2</span></div>
+        <div class="rail-foot">Velo<span>v1.3</span></div>
       </nav>
 
       <main class="content">
@@ -183,6 +183,7 @@
               <div class="seg pr-mode" id="prModeSwitch">
                 <button class="seg-opt active" data-pmode="step">Step</button>
                 <button class="seg-opt" data-pmode="rhythm">Rhythm</button>
+                <button class="seg-opt" data-pmode="sheet">Sheet</button>
                 <button class="seg-opt" data-pmode="free">Free play</button>
               </div>
               <select class="recent" id="prPianoSel" aria-label="Piano sound" title="Piano sound"></select>
@@ -211,15 +212,17 @@
           </div>
 
           <div class="pr-trainer" id="prTrainer" hidden>
-            <button class="tr-toggle" id="trToggle" title="Loop and drill a section">
+            <button class="tr-toggle" id="trToggle" title="Practice just one part on repeat — it speeds up as you nail it">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v4h4"/></svg>
-              Section trainer
+              Loop a section
             </button>
-            <div class="tr-range">
+            <div class="tr-range" id="trRange" title="Drag the two handles to pick the part you want to practice">
+              <div class="tr-track"></div>
+              <div class="tr-fill" id="trFill"></div>
               <input type="range" id="trFrom" min="0" max="1" value="0" aria-label="Section start" />
               <input type="range" id="trTo" min="0" max="1" value="1" aria-label="Section end" />
             </div>
-            <span class="tr-label" id="trLabel">full song</span>
+            <span class="tr-label" id="trLabel">whole song</span>
           </div>
 
           <div class="pr-game" id="prGame" hidden>
@@ -238,6 +241,48 @@
             <div class="pr-countin" id="prCountIn" hidden></div>
             <div class="pr-result" id="prResult" hidden></div>
             <div class="pr-confetti" id="prConfetti" hidden></div>
+          </div>
+
+          <!-- SHEET — Virtual-Piano-style readable letter notation -->
+          <div class="pr-sheet" id="prSheet" hidden>
+            <div class="pr-sheet-bar">
+              <button class="btn primary sh-play" id="shPlay" title="Hear the song play itself">
+                <svg viewBox="0 0 24 24" width="15" height="15"><path d="M8 5v14l11-7-11-7z" fill="currentColor"/></svg>
+                <span>Listen</span>
+              </button>
+              <div class="pr-speed sh-speed">
+                <span>Speed</span>
+                <select id="shSpeed" aria-label="Sheet playback speed">
+                  <option value="0.5">50%</option>
+                  <option value="0.75">75%</option>
+                  <option value="1" selected>100%</option>
+                  <option value="1.25">125%</option>
+                </select>
+              </div>
+              <div class="sh-spacer"></div>
+              <div class="sh-level">
+                <span class="sh-level-lbl">Playability</span>
+                <div class="seg sh-level-seg" id="shLevel">
+                  <button class="seg-opt" data-shlevel="faith" title="Show every note exactly as the MIDI plays — fully faithful, but some chords may be impossible to press">Faithful</button>
+                  <button class="seg-opt active" data-shlevel="bal" title="Trim oversized chords to keep the bass + melody — playable on a real keyboard">Balanced</button>
+                  <button class="seg-opt" data-shlevel="easy" title="Slim chords down to the essentials — easiest to play">Easy</button>
+                </div>
+              </div>
+              <button class="btn ghost sh-copy" id="shCopy" title="Copy the letter sheet to the clipboard">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                <span>Copy</span>
+              </button>
+            </div>
+            <div class="sh-progress"><div class="sh-progress-fill" id="shProgress"></div></div>
+            <div class="sh-hint">Type the highlighted keys to play it yourself — or hit <b>Listen</b> to hear it first. Click any letter to preview its sound.</div>
+            <div class="pr-sheet-flow" id="shFlow"></div>
+            <div class="pr-sheet-legend">
+              <span><b>a</b> tap a key</span>
+              <span class="sh-leg-sharp"><b>A</b> / <b>!</b> hold Shift</span>
+              <span><b>[&#8201;]</b> play together</span>
+              <span><b>|</b> phrase break</span>
+              <span class="sh-leg-drop">faded = trimmed to stay playable</span>
+            </div>
           </div>
 
           <div class="pr-empty" id="prEmpty">
@@ -422,10 +467,6 @@
                 <button class="seg-opt active" data-smode="piano">Piano</button>
                 <button class="seg-opt" data-smode="keyboard">Keyboard</button>
               </div>
-              <div class="sound-vol">
-                <span>Vol</span>
-                <input type="range" id="soundVol" min="0" max="100" value="70" />
-              </div>
             </div>
             <div class="sound-pack" id="soundPackRow" hidden>
               <label>Keyboard model</label>
@@ -466,7 +507,7 @@
             <div class="about-row">
               <span class="about-mark"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M5 19V5l8 4-8 4" fill="currentColor"/><path d="M14 5v14M19 5v14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span>
               <div>
-                <div class="about-name">Velo <span class="about-ver">v1.2</span></div>
+                <div class="about-name">Velo <span class="about-ver">v1.3</span></div>
                 <div class="about-sub">MIDI player — QWERTY &amp; MIDI output</div>
               </div>
             </div>

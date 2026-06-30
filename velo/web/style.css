@@ -507,10 +507,23 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.18)}
   transition:all .18s var(--ease);white-space:nowrap}
 .tr-toggle:hover{color:var(--txt);border-color:var(--line-strong)}
 .tr-toggle.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.tr-range{flex:1;display:flex;align-items:center;gap:10px;opacity:.45;transition:opacity .2s;min-width:0}
+/* dual-handle range: both sliders share ONE track so it reads as a single
+   "from -> to" selection instead of two confusing separate bars */
+.tr-range{position:relative;flex:1;height:30px;display:flex;align-items:center;min-width:0;
+  opacity:.45;transition:opacity .2s}
 .pr-trainer.on .tr-range{opacity:1}
-.tr-range input[type=range]{flex:1;min-width:0}
-.tr-label{font-size:11.5px;font-weight:600;color:var(--txt-3);min-width:120px;text-align:right;
+.tr-track{position:absolute;left:0;right:0;top:50%;height:5px;transform:translateY(-50%);
+  border-radius:4px;background:var(--line-strong)}
+.tr-fill{position:absolute;top:50%;height:5px;transform:translateY(-50%);border-radius:4px;
+  background:var(--accent);left:0;width:100%;pointer-events:none}
+.tr-range input[type=range]{position:absolute;left:0;width:100%;margin:0;height:30px;
+  background:none;pointer-events:none;-webkit-appearance:none;appearance:none}
+.tr-range input[type=range]::-webkit-slider-runnable-track{background:transparent;height:30px;border:none}
+.tr-range input[type=range]::-webkit-slider-thumb{pointer-events:auto;-webkit-appearance:none;appearance:none;
+  width:17px;height:17px;border-radius:50%;background:var(--accent);border:2px solid #0a0a0c;
+  cursor:grab;box-shadow:0 1px 5px rgba(0,0,0,.55);margin-top:6.5px}
+.tr-range input[type=range]::-webkit-slider-thumb:active{cursor:grabbing;transform:scale(1.12)}
+.tr-label{font-size:11.5px;font-weight:600;color:var(--txt-3);min-width:148px;text-align:right;
   font-variant-numeric:tabular-nums}
 .pr-trainer.on .tr-label{color:var(--accent-dim)}
 
@@ -557,6 +570,82 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.18)}
 .pr-rec-name{flex:1;min-width:0;color:var(--txt);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pr-rec-badge{font-size:11px;font-weight:700;color:var(--accent-dim);font-variant-numeric:tabular-nums;white-space:nowrap}
 .pr-rec-title{font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--txt-3);margin-top:8px}
+
+/* ---- SHEET mode (Virtual-Piano-style letter notation) ---- */
+.pr-sheet{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;
+  border-radius:16px;overflow:hidden;border:1px solid var(--line);
+  background:radial-gradient(140% 90% at 50% -10%,rgba(200,255,77,.06),transparent 55%),
+  linear-gradient(180deg,#0c0c10,#08080b)}
+
+/* toolbar */
+.pr-sheet-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:11px 14px;border-bottom:1px solid var(--line);flex-shrink:0}
+.sh-play{min-width:96px}
+.sh-play.playing{background:var(--panel-2);color:var(--txt);border-color:var(--line-strong)}
+.sh-speed{display:flex;margin-left:0}
+.sh-spacer{flex:1 1 12px}
+.sh-level{display:flex;align-items:center;gap:9px}
+.sh-level-lbl{font-size:10.5px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--txt-3)}
+.sh-level-seg .seg-opt{padding:6px 11px;font-size:12px}
+.sh-copy.ok{color:var(--accent-dim);border-color:var(--accent-dim)}
+
+/* slim progress line */
+.sh-progress{height:3px;flex-shrink:0;background:rgba(255,255,255,.05)}
+.sh-progress-fill{height:100%;width:0;background:linear-gradient(90deg,var(--accent-dim),var(--accent));
+  box-shadow:0 0 10px rgba(200,255,77,.5);transition:width .12s linear}
+
+/* play-along hint */
+.sh-hint{padding:9px 16px 0;font-size:12.5px;color:var(--txt-2);flex-shrink:0}
+.sh-hint b{color:var(--txt);font-weight:650}
+
+/* the letter stream */
+.pr-sheet-flow{position:relative;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;
+  padding:22px 30px 30px;font-family:var(--mono);font-size:25px;line-height:2.05;
+  letter-spacing:.5px;scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+.pr-sheet-flow::-webkit-scrollbar{width:9px}
+
+/* placeholder when no song is loaded */
+.sh-flow-empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:6px;text-align:center;font-family:var(--font);color:var(--txt-3)}
+.sh-flow-empty b{font-size:16px;font-weight:650;color:var(--txt-2);letter-spacing:0}
+.sh-flow-empty span{font-size:13px}
+
+/* one note or chord = one token */
+.sh-tok{display:inline-block;margin:0 .16em;padding:1px 3px;border-radius:7px;color:var(--txt);
+  cursor:pointer;transition:color .12s,background .12s,transform .12s;vertical-align:baseline}
+.sh-tok:hover{background:rgba(255,255,255,.06)}
+/* a note already pressed within the CURRENT chord (play-along) */
+.sh-tok .sh-let.hit,.sh-tok .sh-sharp.hit{color:var(--accent-dim)}
+.sh-tok.cur .sh-let.hit,.sh-tok.cur .sh-sharp.hit{opacity:.45}
+/* wrong-key nudge */
+@keyframes shShake{10%,90%{transform:translateX(-1.5px)}30%,70%{transform:translateX(2.5px)}50%{transform:translateX(-2.5px)}}
+.sh-tok.shake{animation:shShake .26s var(--ease)}
+.sh-tok .sh-let{color:inherit}
+.sh-tok .sh-sharp{color:#86d9ff}                    /* sharps (Shift) read as a cool tint */
+.sh-chord{padding:1px 2px;white-space:nowrap}
+.sh-chord .sh-brk{color:var(--txt-3);font-weight:600}
+.sh-chord.sh-trim{position:relative}
+.sh-chord.sh-trim .sh-brk{color:var(--accent-dim);opacity:.7}  /* hint: this chord was trimmed */
+
+/* phrase separator */
+.sh-bar{display:inline-block;margin:0 .42em;color:var(--txt-3);opacity:.5;user-select:none;
+  font-weight:300;transform:scaleY(1.25)}
+
+/* already played — recedes */
+.sh-tok.done{color:var(--txt-3);opacity:.5}
+.sh-tok.done .sh-sharp{color:#4d6a78}
+
+/* the note happening right now — lime pill that pops */
+.sh-tok.cur{background:var(--accent);color:var(--accent-ink);transform:translateY(-1px) scale(1.12);
+  box-shadow:0 4px 18px rgba(200,255,77,.35);opacity:1}
+.sh-tok.cur .sh-let,.sh-tok.cur .sh-sharp,.sh-tok.cur .sh-brk{color:var(--accent-ink)}
+
+/* legend */
+.pr-sheet-legend{display:flex;align-items:center;gap:18px;flex-wrap:wrap;flex-shrink:0;
+  padding:10px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--txt-3)}
+.pr-sheet-legend b{font-family:var(--mono);color:var(--txt-2);font-weight:700}
+.pr-sheet-legend .sh-leg-sharp b{color:#86d9ff}
+.pr-sheet-legend .sh-leg-drop{color:var(--txt-3);opacity:.7;margin-left:auto}
 
 /* ---- live visualizer / stage mode ---- */
 .head-right{display:flex;align-items:center;gap:10px}

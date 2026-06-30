@@ -65,8 +65,14 @@
   }
 
   // ---------- SOUND (mic illusion) ----------
-  let soundOn = false, soundMode = "piano", soundVol = 70;
-  let audioCtx = null, masterGain = null, piano = null;
+  let soundOn = false, soundMode = "piano";
+  let audioCtx = null, masterGain = null, limiter = null, piano = null;
+  // The soundfont samples are mastered quiet, so we run the master bus hot at a
+  // fixed 3x, with a limiter right after it so the extra loudness never clips —
+  // even on a full chord. There's no in-app volume slider on purpose: people set
+  // Velo's loudness from the Windows volume mixer (it controls this app's own
+  // audio output directly), which is the natural place for it.
+  const PIANO_GAIN = 3.0;
   const activeNotes = {};
 
   // Selectable piano models (MusyngKite soundfonts, bundled locally — fuller and
@@ -114,13 +120,22 @@
       try {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         masterGain = audioCtx.createGain();
-        masterGain.gain.value = soundVol / 100;
-        masterGain.connect(audioCtx.destination);
+        masterGain.gain.value = PIANO_GAIN;
+        // brick-wall-ish limiter on the master bus: lets us push volume past 1.0
+        // for real loudness while catching peaks so chords don't clip/distort.
+        limiter = audioCtx.createDynamicsCompressor();
+        limiter.threshold.value = -2.0;
+        limiter.knee.value = 0;
+        limiter.ratio.value = 20;
+        limiter.attack.value = 0.003;
+        limiter.release.value = 0.25;
+        limiter.connect(audioCtx.destination);
+        masterGain.connect(limiter);
         try {
           const conv = audioCtx.createConvolver();
           conv.buffer = makeImpulse(2.4, 2.6);
           const wet = audioCtx.createGain(); wet.gain.value = 0.18;
-          masterGain.connect(conv); conv.connect(wet); wet.connect(audioCtx.destination);
+          masterGain.connect(conv); conv.connect(wet); wet.connect(limiter);
         } catch (_) {}
       } catch (e) { return; }
     }
@@ -294,11 +309,6 @@
     });
   }
 
-  function setSoundVolume(v) {
-    soundVol = v;
-    if (masterGain) masterGain.gain.value = v / 100;
-  }
-
   const HUM_KEYS = ["roll", "timing", "rubato", "velocity"];
   const humId = (k) => "hum" + k[0].toUpperCase() + k.slice(1);
 
@@ -343,11 +353,9 @@
     if (!s) return;
     soundOn = !!s.enabled;
     soundMode = s.mode === "keyboard" ? "keyboard" : "piano";
-    setSoundVolume(typeof s.volume === "number" ? s.volume : 70);
     const t = $("#soundToggle");
     if (t) { t.textContent = soundOn ? "On" : "Off"; t.classList.toggle("on", soundOn); }
     $$("#soundMode .seg-opt").forEach((o) => o.classList.toggle("active", o.dataset.smode === soundMode));
-    const vol = $("#soundVol"); if (vol) { vol.value = soundVol; vol.style.setProperty("--fill", soundVol + "%"); }
 
     currentPackId = s.pack || "brown-local";
     const packSel = $("#soundPack");
@@ -996,6 +1004,7 @@
       prRunning = true;
       const a = api(); if (a && a.practiceActive) a.practiceActive(true);
     }
+    if (prMode === "sheet") enterSheet();   // restore the Sheet panel on view re-entry
     renderRecords();
   }
 
@@ -1030,6 +1039,7 @@
     stopPracticeNotes();
     stopRhythm();
     freePlayStop();
+    sheetStop();
     clearFreeTrails();
     Object.keys(freeHeld).forEach((k) => delete freeHeld[k]);
     if (!prRunning) return;
@@ -1217,6 +1227,7 @@
   }
 
   function rebuildPracticeLayout() {
+    if (prMode === "sheet") return;   // letter flow re-wraps via CSS; nothing to rebuild
     buildPiano();
     if (prMode === "rhythm") {
       ryTiles.forEach((o) => o.el.remove()); ryTiles.clear(); $("#prTrack").innerHTML = "";
@@ -1445,8 +1456,15 @@
     const lbl = $("#trLabel");
     if (lbl) {
       lbl.textContent = RY_TRAINER.on
-        ? `bars ${RY_TRAINER.from + 1}–${RY_TRAINER.to + 1} · ${Math.round(RY_LADDER[trLadderIx] * 100)}%`
-        : "full song";
+        ? `Looping ${RY_TRAINER.from + 1}–${RY_TRAINER.to + 1} · ${Math.round(RY_LADDER[trLadderIx] * 100)}% speed`
+        : "whole song";
+    }
+    // paint the selected range between the two handles
+    const fill = $("#trFill");
+    if (fill) {
+      const lo = (RY_TRAINER.from / max) * 100, hi = (RY_TRAINER.to / max) * 100;
+      fill.style.left = lo + "%";
+      fill.style.width = Math.max(0, hi - lo) + "%";
     }
   }
 
@@ -1709,11 +1727,13 @@
   function applyLoaded(res) {
     if (!res || !res.ok) return;
     if (prMode === "free") freeLoadSong(res);
+    else if (prMode === "sheet") sheetLoadSong(res);
     else prLoad(res);
   }
 
   function onPracticeKey(e) {
     if (!prRunning || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (prMode === "sheet") { onSheetKey(e); return; }   // play-along: type the lit keys
     if (prMode === "free") { onFreeKey(e); return; }
     if (prMode === "rhythm") { onRhythmKey(e); return; }
     const code = e.code;
@@ -1724,7 +1744,14 @@
     prRemaining.forEach((n, i) => { if (charToCode(n.char) === code) cands.push({ n, i }); });
 
     if (cands.length === 0) {
-      if (prCodeSet.has(code)) { e.preventDefault(); registerWrong(e.key); }
+      if (prCodeSet.has(code)) {
+        e.preventDefault();
+        // sound the note you actually pressed, even though it's wrong, so the
+        // keyboard feels responsive (matches Rhythm mode) — "I hear what I hit"
+        const sounded = noteForPress(code, e.shiftKey);
+        if (sounded !== undefined) prPlayNote(sounded);
+        registerWrong(e.key);
+      }
       return;  // not a piano key (Shift, space, etc.) — ignore, no penalty
     }
     e.preventDefault();
@@ -1831,6 +1858,7 @@
   function showPracticeEmpty() {
     $("#prGame").hidden = true; $("#prHud").hidden = true; $("#prFoot").hidden = true;
     $("#prTrainer").hidden = true;
+    $("#prSheet").hidden = true; sheetStop();
     $("#prEmpty").hidden = false;
     prEnter();
   }
@@ -1864,6 +1892,290 @@
   function practiceChooseFile() {
     const a = api(); if (!a || !a.practiceChoose) return;
     a.practiceChoose().then((res) => { if (res && res.ok) applyLoaded(res); });
+  }
+
+  // ---------- SHEET (Virtual-Piano-style letter notation) ----------
+  // A readable left-to-right letter stream like virtualpiano.net: each note is a
+  // QWERTY letter, simultaneous notes become [chords], phrases split on |. The
+  // "Playability" pass trims chords that can't be physically pressed (same-key
+  // collisions / too many keys at once), keeping the bass + melody — so ANY MIDI
+  // becomes playable, which VP's hand-made sheets can't do automatically. The
+  // player watches it play, follows the lime highlight, and can Copy the sheet.
+  const SHEET_CAP = { faith: Infinity, bal: 5, easy: 3 };
+  let shLevel = "bal";
+  let shRaf = 0, shPlaying = false, shPlayhead = 0, shLast = 0, shIdx = 0, shSpeedSel = 1, shLastHi = 0;
+  let shTokens = [];                 // [{i,notes,chord,trim} | {bar:true}]
+  const shStepEls = new Map();       // step index -> token element
+  const shNotesAt = new Map();       // step index -> reduced notes (for playback)
+  let shRemaining = [], shCurIdx = 0;   // play-along: notes still to press for the current token
+
+  // The physical key a char uses, ignoring Shift, so "1" and "!" (Shift+1) collide
+  // on the SAME key. charToCode already folds sharps/uppercase onto their base key.
+  function sheetPhysKey(ch) { return charToCode(ch) || ("x" + ch); }
+
+  // Trim a chord to what a hand can actually press, the way MIDI->VP converters do:
+  //   1) de-duplicate notes landing on the same physical key (keep the higher one)
+  //   2) cap the count, always preserving the bass (lowest) + melody (highest)
+  function sheetReduce(notes, cap) {
+    const byKey = new Map();
+    notes.forEach((n) => {
+      const k = sheetPhysKey(n.char);
+      const ex = byKey.get(k);
+      if (!ex || n.note > ex.note) byKey.set(k, n);
+    });
+    let kept = [...byKey.values()].sort((a, b) => a.note - b.note);
+    if (kept.length > cap) {
+      const bass = kept[0], melody = kept[kept.length - 1];
+      const mids = kept.slice(1, -1).sort((a, b) => b.note - a.note);   // high -> low
+      const pick = cap >= 2 ? [bass, melody] : [melody];
+      for (const m of mids) { if (pick.length >= cap) break; pick.push(m); }
+      kept = pick.sort((a, b) => a.note - b.note);
+    }
+    return kept;
+  }
+
+  // Turn prSteps into the token list at the current playability level.
+  function sheetBuild() {
+    shTokens = []; shNotesAt.clear();
+    const steps = prSteps;
+    if (!steps.length) return;
+    const cap = SHEET_CAP[shLevel];
+    // phrase break (|) when a gap is clearly bigger than the song's typical spacing
+    const gaps = [];
+    for (let i = 1; i < steps.length; i++) { const g = steps[i].t - steps[i - 1].t; if (g > 0) gaps.push(g); }
+    gaps.sort((a, b) => a - b);
+    const med = gaps.length ? gaps[Math.floor(gaps.length / 2)] : 0.5;
+    const barGap = Math.max(0.5, med * 3.2);
+    steps.forEach((st, i) => {
+      if (i > 0 && (st.t - steps[i - 1].t) >= barGap) shTokens.push({ bar: true });
+      const full = st.notes;
+      const notes = (cap === Infinity)
+        ? full.slice().sort((a, b) => a.note - b.note)
+        : sheetReduce(full, cap);
+      shNotesAt.set(i, notes);
+      shTokens.push({ i, notes, chord: notes.length > 1, trim: notes.length < full.length });
+    });
+  }
+
+  function sheetTokenText(t) {
+    if (t.bar) return "|";
+    const s = t.notes.map((n) => n.char).join("");
+    return t.chord ? "[" + s + "]" : s;
+  }
+  function sheetText() { return shTokens.map(sheetTokenText).join(" "); }
+
+  function setSheetProgress(ratio) {
+    const f = $("#shProgress"); if (f) f.style.width = Math.max(0, Math.min(1, ratio)) * 100 + "%";
+  }
+
+  // Paint the stream into #shFlow.
+  function sheetRender() {
+    const flow = $("#shFlow"); if (!flow) return;
+    shStepEls.clear();
+    if (!prSteps.length) {
+      flow.innerHTML = '<div class="sh-flow-empty"><b>Pick a song to see it written in keys</b>' +
+        '<span>Every note becomes a letter you can play on your keyboard.</span></div>';
+      setSheetProgress(0);
+      return;
+    }
+    sheetBuild();
+    const frag = document.createDocumentFragment();
+    shTokens.forEach((t) => {
+      if (t.bar) {
+        const b = document.createElement("span");
+        b.className = "sh-bar"; b.textContent = "|";
+        frag.appendChild(b); return;
+      }
+      const el = document.createElement("span");
+      el.className = "sh-tok" + (t.chord ? " sh-chord" : "") + (t.trim ? " sh-trim" : "");
+      if (t.chord) { const o = document.createElement("span"); o.className = "sh-brk"; o.textContent = "["; el.appendChild(o); }
+      t.notes.forEach((n) => {
+        const c = document.createElement("span");
+        c.className = charNeedsShift(n.char) ? "sh-sharp" : "sh-let";
+        c.textContent = n.char;
+        c.dataset.note = n.note;
+        el.appendChild(c);
+      });
+      if (t.chord) { const o = document.createElement("span"); o.className = "sh-brk"; o.textContent = "]"; el.appendChild(o); }
+      frag.appendChild(el);
+      shStepEls.set(t.i, el);
+    });
+    flow.innerHTML = ""; flow.appendChild(frag);
+    flow.scrollTop = 0;
+    setSheetProgress(0);
+    if (!shPlaying) sheetArmStart();   // ready for play-along unless we're listening
+  }
+
+  function sheetHighlight(idx) {
+    // incremental: only retire the steps passed since the last call (O(total), not O(n^2))
+    for (let j = Math.max(0, shLastHi); j < idx; j++) {
+      const e = shStepEls.get(j); if (e) { e.classList.add("done"); e.classList.remove("cur"); }
+    }
+    const cur = shStepEls.get(idx);
+    if (cur) {
+      cur.classList.add("cur"); cur.classList.remove("done");
+      // follow the playhead, but only scroll when it nears the edges (smoother)
+      const flow = $("#shFlow");
+      const margin = flow.clientHeight * 0.28;
+      const top = cur.offsetTop, bot = top + cur.offsetHeight;
+      if (top < flow.scrollTop + margin || bot > flow.scrollTop + flow.clientHeight - margin) {
+        flow.scrollTo({ top: Math.max(0, top - flow.clientHeight / 2 + cur.offsetHeight / 2), behavior: "smooth" });
+      }
+    }
+    shLastHi = idx;
+    setSheetProgress(prSteps.length > 1 ? idx / (prSteps.length - 1) : 1);
+  }
+
+  function sheetClearHL() {
+    shStepEls.forEach((el) => el.classList.remove("cur", "done"));
+    shLastHi = 0;
+  }
+
+  function sheetClearHits() {
+    const flow = $("#shFlow"); if (!flow) return;
+    flow.querySelectorAll(".hit").forEach((s) => s.classList.remove("hit"));
+  }
+
+  // ----- play-along (type the keys yourself) -----
+  // Arm a token: it becomes "current" and waits for the player to press its keys.
+  function sheetArm(idx) {
+    shCurIdx = idx;
+    const notes = shNotesAt.get(idx) || (prSteps[idx] ? prSteps[idx].notes : []);
+    shRemaining = notes.map((n) => ({ note: n.note, char: n.char }));
+    sheetHighlight(idx);
+  }
+  // (Re)start play-along from the top.
+  function sheetArmStart() {
+    sheetClearHL(); sheetClearHits();
+    if (prSteps.length) sheetArm(0);
+  }
+  function sheetWrong() {
+    const el = shStepEls.get(shCurIdx);
+    if (el) { el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake"); }
+  }
+  function sheetAdvance() {
+    if (shCurIdx + 1 >= prSteps.length) {     // reached the end
+      const el = shStepEls.get(shCurIdx); if (el) { el.classList.remove("cur"); el.classList.add("done"); }
+      setSheetProgress(1);
+      shRemaining = [];
+      return;
+    }
+    sheetArm(shCurIdx + 1);
+  }
+  // Register one note as pressed (from keyboard or click). Returns true if it counted.
+  function sheetHitNote(note) {
+    const pend = shRemaining.find((n) => n.note === note);
+    if (!pend) return false;
+    shRemaining.splice(shRemaining.indexOf(pend), 1);
+    const el = shStepEls.get(shCurIdx);
+    if (el) { const sp = el.querySelector('[data-note="' + note + '"]'); if (sp) sp.classList.add("hit"); }
+    if (!shRemaining.length) sheetAdvance();
+    return true;
+  }
+  // Keyboard input while Sheet mode is interactive (not listening).
+  function onSheetKey(e) {
+    if (shPlaying || !prSteps.length) return;
+    const code = e.code; if (!code) return;
+    // notes still pending on the current token whose physical key matches
+    const cands = shRemaining.filter((n) => charToCode(n.char) === code);
+    if (!cands.length) {
+      if (prCodeSet.has(code)) { e.preventDefault(); sheetWrong(); }
+      return;   // not a piano key (Shift, space…) — ignore
+    }
+    e.preventDefault();
+    // a natural + its sharp can share one physical key — Shift state disambiguates
+    let pick = cands[0];
+    if (cands.length > 1) pick = cands.find((o) => charNeedsShift(o.char) === e.shiftKey) || cands[0];
+    prPlayNote(pick.note);
+    sheetHitNote(pick.note);
+  }
+
+  const SH_PLAY_ICO = '<svg viewBox="0 0 24 24" width="15" height="15"><path d="M8 5v14l11-7-11-7z" fill="currentColor"/></svg>';
+  const SH_STOP_ICO = '<svg viewBox="0 0 24 24" width="15" height="15"><rect x="6" y="5" width="12" height="12" rx="2" fill="currentColor"/></svg>';
+  function updateSheetPlayBtn() {
+    const b = $("#shPlay"); if (!b) return;
+    b.classList.toggle("playing", shPlaying);
+    b.innerHTML = (shPlaying ? SH_STOP_ICO + " <span>Stop</span>" : SH_PLAY_ICO + " <span>Listen</span>");
+  }
+
+  function sheetStop() {
+    shPlaying = false;
+    if (shRaf) cancelAnimationFrame(shRaf); shRaf = 0;
+    stopPracticeNotes();
+    sheetClearHL(); sheetClearHits();
+    setSheetProgress(0);
+    updateSheetPlayBtn();
+  }
+
+  function sheetStart() {
+    if (prMode !== "sheet" || !prSteps.length) return;
+    sheetStop();
+    ensurePracticeAudio();
+    shIdx = 0; shLast = 0;
+    shPlayhead = (prSteps[0].t || 0) - 0.35;
+    shPlaying = true;
+    updateSheetPlayBtn();
+    shRaf = requestAnimationFrame(sheetFrame);
+  }
+
+  function sheetFrame(ts) {
+    const now = ts / 1000;
+    const dt = shLast ? Math.min(0.05, now - shLast) : 0;
+    shLast = now;
+    shPlayhead += dt * shSpeedSel;
+    let played = -1;
+    while (shIdx < prSteps.length && prSteps[shIdx].t <= shPlayhead) {
+      const notes = shNotesAt.get(shIdx) || prSteps[shIdx].notes;
+      notes.forEach((n) => prPlayNote(n.note));
+      played = shIdx;
+      shIdx++;
+    }
+    if (played >= 0) sheetHighlight(played);
+    if (shIdx >= prSteps.length && shPlayhead > (prSteps[prSteps.length - 1].t + 0.5)) {
+      shPlaying = false; if (shRaf) cancelAnimationFrame(shRaf); shRaf = 0;
+      updateSheetPlayBtn();
+      sheetArmStart();        // demo over — hand control back for play-along
+      return;
+    }
+    shRaf = requestAnimationFrame(sheetFrame);
+  }
+
+  // Show the Sheet panel + render (used by the mode switch and on view re-entry).
+  function enterSheet() {
+    prMode = "sheet";
+    sheetStop(); stopRhythm(); freePlayStop(); clearFreeTrails();
+    $("#prEmpty").hidden = true;
+    $("#prResult").hidden = true; $("#prResult").innerHTML = "";
+    $("#prConfetti").hidden = true; $("#prConfetti").innerHTML = "";
+    $("#prGame").hidden = true; $("#prHud").hidden = true;
+    $("#prTrainer").hidden = true; $("#prFoot").hidden = true;
+    $("#prSheet").hidden = false;
+    ensurePracticeAudio();
+    if (prKeymap && Object.keys(prKeymap).length) {
+      prMapChars = new Set(Object.values(prKeymap));
+      prCodeSet = new Set([...prMapChars].map(charToCode).filter(Boolean));
+    }
+    if (prSteps.length) prLoaded = true;
+    prRunning = true;
+    const sel = $("#shSpeed"); shSpeedSel = sel ? (parseFloat(sel.value) || 1) : 1;
+    sheetRender();
+    updateSheetPlayBtn();
+    const a = api(); if (a && a.practiceActive) a.practiceActive(true);
+  }
+
+  // A freshly chosen song while Sheet mode is active.
+  function sheetLoadSong(res) {
+    prSteps = res.steps || [];
+    if (res.keymap) prKeymap = res.keymap;
+    prMapChars = new Set(Object.values(prKeymap));
+    prCodeSet = new Set([...prMapChars].map(charToCode).filter(Boolean));
+    prSongKey = res.name || "";
+    prDuration = res.duration || 0;
+    prCurrentPath = res.path || prCurrentPath;
+    prLoaded = true;
+    sheetStop();
+    $("#prEmpty").hidden = true; $("#prSheet").hidden = false;
+    sheetRender();
   }
 
   // ---------- LIVE VISUALIZER / STAGE MODE ----------
@@ -2039,9 +2351,6 @@
       if (soundOn) ensureAudio();
       const a = api(); if (a && a.setSound) a.setSound("mode", soundMode);
     }));
-    const sv = $("#soundVol");
-    sv.addEventListener("input", () => { setSoundVolume(parseInt(sv.value)); sv.style.setProperty("--fill", sv.value + "%"); });
-    sv.addEventListener("change", () => { const a = api(); if (a && a.setSound) a.setSound("volume", parseInt(sv.value)); });
     $("#soundPack").addEventListener("change", (e) => {
       currentPackId = e.target.value;
       stopAllNotes();
@@ -2186,6 +2495,7 @@
       const v = e.target.value;
       if (v === "__none__") {
         if (prMode === "free") freeClearSong();
+        else if (prMode === "sheet") { prSteps = []; prSongKey = ""; sheetStop(); sheetRender(); }
         else { prSteps = []; prLoaded = false; showPracticeEmpty(); }
         return;
       }
@@ -2196,11 +2506,62 @@
     $("#prFreePlay").addEventListener("click", freePlayToggle);
     $("#prRestart").addEventListener("click", () => { if (prLoaded) restartPractice(); });
 
+    // --- sheet mode ---
+    $("#shPlay").addEventListener("click", () => {
+      if (shPlaying) { sheetStop(); sheetArmStart(); }   // stop the demo, hand back for play-along
+      else sheetStart();
+    });
+    $("#shSpeed").addEventListener("change", (e) => { shSpeedSel = parseFloat(e.target.value) || 1; });
+    // click a letter to hear it — and if it's the current note, it counts as played
+    $("#shFlow").addEventListener("click", (e) => {
+      if (shPlaying) return;
+      const sp = e.target.closest("[data-note]"); if (!sp) return;
+      const note = parseInt(sp.dataset.note, 10); if (isNaN(note)) return;
+      ensurePracticeAudio();
+      prPlayNote(note);
+      const tok = sp.closest(".sh-tok");
+      if (tok && tok === shStepEls.get(shCurIdx)) sheetHitNote(note);
+    });
+    $$("#shLevel .seg-opt").forEach((o) => o.addEventListener("click", () => {
+      if (o.dataset.shlevel === shLevel) return;
+      shLevel = o.dataset.shlevel;
+      $$("#shLevel .seg-opt").forEach((x) => x.classList.toggle("active", x === o));
+      const wasPlaying = shPlaying;
+      sheetStop();
+      sheetRender();
+      if (wasPlaying) sheetStart();
+    }));
+    $("#shCopy").addEventListener("click", () => {
+      if (!prSteps.length) return;
+      const txt = sheetText();
+      const ok = () => {
+        const b = $("#shCopy"), s = b.querySelector("span"); if (!s) return;
+        const prev = s.textContent; b.classList.add("ok"); s.textContent = "Copied!";
+        setTimeout(() => { b.classList.remove("ok"); s.textContent = prev; }, 1400);
+      };
+      const fallback = () => {
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = txt; ta.style.position = "fixed"; ta.style.opacity = "0";
+          document.body.appendChild(ta); ta.select();
+          document.execCommand("copy"); document.body.removeChild(ta); ok();
+        } catch (_) {}
+      };
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText)
+          navigator.clipboard.writeText(txt).then(ok).catch(fallback);
+        else fallback();
+      } catch (_) { fallback(); }
+    });
+
     $$("#prModeSwitch .seg-opt").forEach((o) => o.addEventListener("click", () => {
       if (o.dataset.pmode === prMode) return;
       prMode = o.dataset.pmode;
       $$("#prModeSwitch .seg-opt").forEach((x) => x.classList.toggle("active", x === o));
+      sheetStop();                       // leaving any mode: kill a running sheet
+      $("#prSheet").hidden = true;        // hidden by default; enterSheet re-shows it
       if (prMode === "free") enterFree();
+      else if (prMode === "sheet") enterSheet();
       else if (prSteps.length) restartPractice();
       else showPracticeEmpty();
     }));
