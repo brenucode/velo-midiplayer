@@ -37,20 +37,6 @@
 - 🔊 **Hear your mistakes** — in Step mode, a wrong key now sounds the note you actually pressed (Rhythm already did), so you catch slips by ear, not just by colour.
 - 🔁 **Clearer "Loop a section"** — the section trainer's two sliders are now one range with draggable handles and the looped part highlighted, so it's obvious what you're drilling.
 
-## 🆕 What's new in v1.2
-
-- 🎲 **Random Fail** — an optional "human who slips" mode (off by default). Turn it on in **Settings** for occasional, believable mistakes: a note that rushes or drags, or one that slips to the wrong key. Two sliders control how often it happens. It's the playful opposite of the Humanizer — and yes, it *intentionally* plays notes that aren't in the file, so keep it subtle.
-
-## 🆕 What's new in v1.1
-
-- 🐧 **Now runs on Linux** — Fedora, Ubuntu/Debian, Arch and openSUSE. One-command install that adds Velo to your apps menu (see [Linux](#-linux) below). Uses your system's WebKit, so it just works.
-- 🎭 **Humanizer** — playback no longer sounds like a robot. A profile (Subtle / Moderate / Loose) plus fine sliders add human imperfection: chords roll instead of hitting in unison, the timing of each note and release wanders, the tempo gently breathes (rubato), and the force varies — re-randomised every chord so it never repeats. Your settings are saved.
-- 🌐 **Online Sequencer in the MIDI Hub** — search and download from [onlinesequencer.net](https://onlinesequencer.net) right inside Velo, alongside nanoMIDI and BitMidi.
-- ▦ **Stage now plays the piano** — the visualizer voices the song as the notes cross, not just light up.
-- 🔊 **Shows up as "Velo"** (with its icon) in the Windows volume mixer, instead of "Microsoft Edge WebView2".
-- 🔔 **Update notifier** — Velo checks GitHub on launch and, when a newer release exists, offers to grab it (downloads the zip to your Downloads folder). No silent self-overwriting.
-- ✅ **Runs straight from a download** — Velo clears the Windows "downloaded file" block itself, so a freshly unzipped copy just opens.
-
 ## 📸 Screenshots
 
 <p align="center">
