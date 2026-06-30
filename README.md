@@ -14,6 +14,10 @@
   <img src="https://img.shields.io/badge/made%20by-brenu-1c1c23?style=flat-square" />
 </p>
 
+<p align="center">
+  <a href="https://github.com/brenucode/velo-midiplayer/releases/latest"><img src="https://img.shields.io/badge/⬇%20Download%20Velo-c8ff4d?style=for-the-badge&labelColor=1c1c23" /></a>
+</p>
+
 ---
 
 **Velo** started from a simple itch: play MIDI in an interface that doesn't look like 2009 software. A clean player, an online song library, a practice mode that feels like a little game, and a stage mode to look good on stream. No bloat, no annoying install — open it and it works.
