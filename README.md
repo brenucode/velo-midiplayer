@@ -198,6 +198,11 @@ Copyright © 2026 brenu.
 
 Released under the **GNU General Public License v3.0** (see [LICENSE](LICENSE)).
 
+**Reusing Velo's code?** GPL v3 is a copyleft license, which means:
+- ✅ You're free to read it, learn from it, fork it — and even sell it.
+- ↩️ **Any project that reuses Velo's code must also be open-source under GPL v3.** You cannot take this code and ship a closed-source or proprietary version of it.
+- 🙏 **You must keep credit to the original author.** Under GPL v3 §7(b), the attribution **"Velo — by brenu ([github.com/brenucode](https://github.com/brenucode))"** must be preserved in the source and shown in the About/credits of any derived work.
+
 Built upon the playback engine of **[nanoMIDIPlayer](https://github.com/NotHammer043/nanoMIDIPlayer)** (NotHammer043), also licensed under GPLv3 — thanks for the base.
 
 Sounds: **MusyngKite** pianos ([midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts)) and the **Cherry MX** keyboard ([Mechvibes](https://github.com/hainguyents13/mechvibes)).
