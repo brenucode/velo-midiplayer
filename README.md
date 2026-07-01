@@ -46,15 +46,15 @@
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="docs/player.png" alt="Velo — MIDI Player" width="100%" />
-</p>
-
-<p align="center">
-  <img src="docs/sheet.png" alt="Practice — Sheet mode" width="100%" /><br/>
-  <sub><b>Practice (Sheet)</b> — any MIDI written out as Virtual-Piano letters you can play, learn and share.</sub>
+  <img src="docs/player.png" alt="Velo — MIDI Player with the live mini-stage" width="100%" /><br/>
+  <sub><b>Player</b> — now with the live mini-stage: watch the notes fall while a song plays.</sub>
 </p>
 
 <table>
+  <tr>
+    <td width="50%" valign="top"><img src="docs/appearance.png" alt="Custom accent colors + rebindable hotkeys" /><br/><sub><b>Appearance</b> — recolor the whole app to any accent, and rebind hotkeys (incl. mouse M4/M5).</sub></td>
+    <td width="50%" valign="top"><img src="docs/sheet.png" alt="Practice — Sheet mode" /><br/><sub><b>Practice (Sheet)</b> — any MIDI written out as Virtual-Piano letters you can play.</sub></td>
+  </tr>
   <tr>
     <td width="50%" valign="top"><img src="docs/practice.png" alt="Practice — Rhythm mode" /><br/><sub><b>Practice (Rhythm)</b> — notes fall onto the keys; hit them in time.</sub></td>
     <td width="50%" valign="top"><img src="docs/stage.png" alt="Stage mode" /><br/><sub><b>Stage</b> — fullscreen visualizer, great for streaming.</sub></td>
