@@ -410,33 +410,85 @@ class Player:
         return self.getState()
 
     # ----- hotkeys ----------------------------------------------------------
+    _HK_DEFAULTS = {
+        "play": "f1", "pause": "f2", "stop": "f3",
+        "speedup": "f4", "slowdown": "f5", "prevtrack": "f6", "nexttrack": "f7",
+    }
+
     def bindHotkeys(self):
         self.unbindHotkeys()
         hk = configuration.configData.get("hotkeys", {})
-        mapping = {
-            hk.get("play", "f1"): self.toggle,
-            hk.get("pause", "f2"): self.pause,
-            hk.get("stop", "f3"): self.stop,
-            hk.get("speedup", "f4"): lambda: self.changeSpeed(5),
-            hk.get("slowdown", "f5"): lambda: self.changeSpeed(-5),
-            hk.get("prevtrack", "f6"): self.prevTrack,
-            hk.get("nexttrack", "f7"): self.nextTrack,
+        fns = {
+            "play": self.toggle,
+            "pause": self.pause,
+            "stop": self.stop,
+            "speedup": lambda: self.changeSpeed(5),
+            "slowdown": lambda: self.changeSpeed(-5),
+            "prevtrack": self.prevTrack,
+            "nexttrack": self.nextTrack,
         }
+        kb = {}       # key name  -> fn  (keyboard keys / symbols)
+        mouse = {}    # "x1"/"x2" -> fn  (mouse side buttons M4/M5)
+        for action, fn in fns.items():
+            val = str(hk.get(action, self._HK_DEFAULTS[action])).strip().lower()
+            if not val or val == "none":        # explicitly unbound → skip
+                continue
+            if val.startswith("mouse:"):
+                mouse[val.split(":", 1)[1]] = fn
+            else:
+                kb[val] = fn
         if platcompat.IS_WINDOWS:
-            self._bindHotkeysWindows(mapping)
+            self._bindHotkeysWindows(kb)
         else:
-            self._bindHotkeysPynput(mapping)
+            self._bindHotkeysPynput(kb)
+        self._bindMouse(mouse)                  # pynput mouse works on every platform
 
     def _bindHotkeysWindows(self, mapping):
-        """Windows: the `keyboard` library (low-level hook, no admin needed)."""
+        """Windows: the `keyboard` library (low-level hook, no admin needed).
+        Bind each key independently so one unbindable key (e.g. an exotic dead
+        key) can't take the others down with it."""
         if keyboard is None:
             return
-        try:
-            for key, fn in mapping.items():
-                handler = keyboard.on_press_key(str(key).lower(), lambda e, fn=fn: fn())
+        for key, fn in mapping.items():
+            try:
+                handler = keyboard.on_press_key(key, lambda e, fn=fn: fn())
                 self._hotkeyHandlers.append(handler)
+            except Exception as e:
+                logger.warning(f"hotkey bind failed for {key!r}: {e}")
+
+    def _bindMouse(self, mouse_map):
+        """Bind mouse side-buttons (M4/M5) via pynput. Tokens: 'x1' (M4/back),
+        'x2' (M5/forward). A single non-suppressing global listener dispatches
+        the mapped buttons — other apps still get the click too."""
+        if not mouse_map:
+            return
+        try:
+            from pynput import mouse as pm
         except Exception as e:
-            logger.warning(f"hotkey bind failed: {e}")
+            logger.warning(f"mouse hotkeys unavailable (pynput): {e}")
+            return
+        btns = {}
+        for tok, fn in mouse_map.items():
+            b = getattr(pm.Button, tok, None)
+            if b is not None:
+                btns[b] = fn
+        if not btns:
+            return
+
+        def on_click(x, y, button, pressed):
+            if pressed and button in btns:
+                try:
+                    btns[button]()
+                except Exception:
+                    pass
+
+        try:
+            listener = pm.Listener(on_click=on_click)
+            listener.daemon = True
+            listener.start()
+            self._hotkeyHandlers.append(listener)
+        except Exception as e:
+            logger.warning(f"mouse hotkey bind failed: {e}")
 
     @staticmethod
     def _pynputHotkey(key):

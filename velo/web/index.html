@@ -69,7 +69,7 @@
           <span class="nav-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.5M12 18.5V21M21 12h-2.5M5.5 12H3M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8M18.4 18.4l-1.8-1.8M7.4 7.4 5.6 5.6"/></svg></span>
           <span class="nav-label">Settings</span>
         </button>
-        <div class="rail-foot">Velo<span>v1.3</span></div>
+        <div class="rail-foot">Velo<span>v1.4</span></div>
       </nav>
 
       <main class="content">
@@ -173,6 +173,19 @@
               <div class="log" id="log"></div>
             </div>
           </div>
+
+          <div class="card mini-stage reveal" id="miniStage" style="--d:4" title="Click to open the full-screen Stage">
+            <div class="ms-top">
+              <span class="ms-label"><span class="ms-dot"></span>Stage</span>
+              <span class="ms-expand">Expand
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+              </span>
+            </div>
+            <div class="ms-canvas-wrap">
+              <canvas id="msCanvas"></canvas>
+              <div class="ms-empty" id="msEmpty">Press play — watch the notes fall in real time</div>
+            </div>
+          </div>
         </section>
 
         <!-- PRACTICE / TREINO -->
@@ -185,6 +198,22 @@
                 <button class="seg-opt" data-pmode="rhythm">Rhythm</button>
                 <button class="seg-opt" data-pmode="sheet">Sheet</button>
                 <button class="seg-opt" data-pmode="free">Free play</button>
+              </div>
+              <div class="pr-arrange" id="prArrange">
+                <span class="pr-arrange-lbl" title="How the MIDI is fitted to a QWERTY keyboard. Never changes the key — same letters as Virtual Piano / Roblox.">Arrange</span>
+                <div class="seg pr-arrange-seg">
+                  <button class="seg-opt active" data-arr="faith" title="The real song, untouched — full chords (some may be impossible to press by hand; great for listening or MIDI keyboards)">Faithful</button>
+                  <button class="seg-opt" data-arr="bal" title="Playable on a keyboard: keeps every note, but breaks impossible chords into a quick roll. Same letters as Roblox.">Balanced</button>
+                  <button class="seg-opt" data-arr="easy" title="Melody line only — the easiest to play">Easy</button>
+                </div>
+              </div>
+              <div class="pr-arrange" id="prInputWrap" hidden>
+                <span class="pr-arrange-lbl" title="Play along with your computer keyboard, or a real MIDI keyboard plugged in">Input</span>
+                <div class="seg pr-arrange-seg" id="prInput">
+                  <button class="seg-opt active" data-inp="kbd" title="Play along on your computer (QWERTY) keyboard">⌨ Keyboard</button>
+                  <button class="seg-opt" data-inp="midi" title="Play along on a real MIDI keyboard — full chords, exact octave">🎹 MIDI</button>
+                </div>
+                <select class="recent" id="prMidiDev" aria-label="MIDI input device" title="MIDI input device" hidden></select>
               </div>
               <select class="recent" id="prPianoSel" aria-label="Piano sound" title="Piano sound"></select>
               <select class="recent" id="prSong" aria-label="Song to practice"></select>
@@ -260,14 +289,6 @@
                 </select>
               </div>
               <div class="sh-spacer"></div>
-              <div class="sh-level">
-                <span class="sh-level-lbl">Playability</span>
-                <div class="seg sh-level-seg" id="shLevel">
-                  <button class="seg-opt" data-shlevel="faith" title="Show every note exactly as the MIDI plays — fully faithful, but some chords may be impossible to press">Faithful</button>
-                  <button class="seg-opt active" data-shlevel="bal" title="Trim oversized chords to keep the bass + melody — playable on a real keyboard">Balanced</button>
-                  <button class="seg-opt" data-shlevel="easy" title="Slim chords down to the essentials — easiest to play">Easy</button>
-                </div>
-              </div>
               <button class="btn ghost sh-copy" id="shCopy" title="Copy the letter sheet to the clipboard">
                 <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
                 <span>Copy</span>
@@ -446,6 +467,34 @@
         <!-- SETTINGS / ABOUT -->
         <section class="view" data-view="settings" hidden>
           <div class="view-head"><h1>Settings</h1></div>
+          <div class="card appearance-card reveal">
+            <div class="card-title">Appearance</div>
+            <div class="ap-row">
+              <div class="ap-info">
+                <div class="ap-label">Accent color</div>
+                <div class="ap-sub">Pick a preset or choose your own — it recolors the whole app.</div>
+              </div>
+              <div class="swatches" id="swatchRow">
+                <button class="swatch" data-color="#c8ff4d" style="--sw:#c8ff4d" title="Velo Lime"></button>
+                <button class="swatch" data-color="#35d0ff" style="--sw:#35d0ff" title="Cyan"></button>
+                <button class="swatch" data-color="#7c9cff" style="--sw:#7c9cff" title="Blue"></button>
+                <button class="swatch" data-color="#a78bfa" style="--sw:#a78bfa" title="Purple"></button>
+                <button class="swatch" data-color="#ff5ea8" style="--sw:#ff5ea8" title="Pink"></button>
+                <button class="swatch" data-color="#ff9142" style="--sw:#ff9142" title="Orange"></button>
+                <button class="swatch" data-color="#e6e6ee" style="--sw:#e6e6ee" title="Silver"></button>
+                <label class="swatch swatch-custom" id="customSwatch" title="Choose any color">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                  <input type="color" id="customColor" value="#c8ff4d" />
+                </label>
+              </div>
+            </div>
+            <div class="ap-preview" id="apPreview">
+              <span class="app-chip">Accent</span>
+              <span class="app-dot"></span>
+              <span class="app-bar"><i></i></span>
+              <span class="app-hex" id="apHex">#c8ff4d</span>
+            </div>
+          </div>
           <div class="card hotkeys reveal">
             <div class="card-title">Global hotkeys</div>
             <div class="hk-list">
@@ -457,7 +506,7 @@
               <div class="hk-row"><span class="hk-label"><svg viewBox="0 0 24 24" width="16" height="16"><rect x="5" y="6" width="2.4" height="12" rx="1.2" fill="currentColor"/><path d="M18 6 9 12l9 6Z" fill="currentColor"/></svg> Previous track</span><button class="hk-key" data-action="prevtrack">F6</button></div>
               <div class="hk-row"><span class="hk-label"><svg viewBox="0 0 24 24" width="16" height="16"><rect x="16.6" y="6" width="2.4" height="12" rx="1.2" fill="currentColor"/><path d="M6 6l9 6-9 6Z" fill="currentColor"/></svg> Next track</span><button class="hk-key" data-action="nexttrack">F7</button></div>
             </div>
-            <div class="hk-hint">Click a key and press the new one. Hotkeys work even when Velo is in the background and control the Player.</div>
+            <div class="hk-hint">Click a slot, then press any key — a letter, symbol, or a mouse side-button (M4/M5). Press <b>Delete</b> to unbind it (None), or <b>Esc</b> to cancel. Hotkeys work even when Velo is in the background.</div>
           </div>
           <div class="card sound reveal" style="--d:1">
             <div class="card-title">Sound — "playing" illusion</div>
@@ -507,7 +556,7 @@
             <div class="about-row">
               <span class="about-mark"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M5 19V5l8 4-8 4" fill="currentColor"/><path d="M14 5v14M19 5v14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span>
               <div>
-                <div class="about-name">Velo <span class="about-ver">v1.3</span></div>
+                <div class="about-name">Velo <span class="about-ver">v1.4</span></div>
                 <div class="about-sub">MIDI player — QWERTY &amp; MIDI output</div>
               </div>
             </div>

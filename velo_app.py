@@ -393,9 +393,39 @@ class Api:
             pass
         return True
 
+    # ----- practice MIDI input (passive — reads a keyboard, presses nothing) -
+    def practiceMidiDevices(self):
+        from velo.backend import practice_input
+        return practice_input.list_devices()
+
+    def practiceMidiStart(self, device):
+        from velo.backend import practice_input
+        # free the MIDI device from the "MIDI -> Keys" engine if it's holding it
+        try:
+            if INPUT is not None and INPUT.running:
+                INPUT.stop()
+        except Exception:
+            pass
+        ok = practice_input.start(device or "", emit)
+        return {"ok": bool(ok), "device": device or "",
+                "devices": practice_input.list_devices()}
+
+    def practiceMidiStop(self):
+        from velo.backend import practice_input
+        practice_input.stop()
+        return {"ok": True}
+
     # ----- app state / drag-drop -------------------------------------------
     def setLastView(self, name):
         configuration.configData.setdefault("appUI", {})["lastView"] = str(name)
+        configuration.save()
+        return True
+
+    def getSkin(self):
+        return configuration.configData.get("appUI", {}).get("skin", "lime")
+
+    def setSkin(self, name):
+        configuration.configData.setdefault("appUI", {})["skin"] = str(name)
         configuration.save()
         return True
 
@@ -504,24 +534,43 @@ class Api:
             pass
 
     def maximize(self):
-        # Toggle on the native WinForms window's REAL state, so it stays in sync
-        # even if the user maximized/restored via a titlebar double-click. Set
-        # MaximizedBounds to the work area so a frameless maximize doesn't cover
-        # the taskbar.
+        # Frameless maximize/restore by setting the window Bounds directly to the
+        # monitor work area. We DON'T use WindowState.Maximized: on a borderless
+        # WinForms form it misbehaves (with MaximizedBounds it could throw the
+        # window off-screen — the "window disappears when I maximize" bug). Toggles.
         try:
             from System.Windows.Forms import FormWindowState, Screen
+            from System.Drawing import Rectangle
             from System import Action
             native = WINDOW.native
 
             def toggle():
-                if native.WindowState == FormWindowState.Maximized:
-                    native.WindowState = FormWindowState.Normal
-                else:
-                    try:
-                        native.MaximizedBounds = Screen.FromControl(native).WorkingArea
-                    except Exception:
-                        pass
-                    native.WindowState = FormWindowState.Maximized
+                try:
+                    # never leave the form in a native Maximized state
+                    if native.WindowState != FormWindowState.Normal:
+                        native.WindowState = FormWindowState.Normal
+                    saved = getattr(self, "_maxRestore", None)
+                    if saved is not None:
+                        # if the monitor layout changed and the saved rect is now
+                        # off every screen, re-center it so the window can't vanish
+                        try:
+                            visible = any(scr.WorkingArea.IntersectsWith(saved) for scr in Screen.AllScreens)
+                        except Exception:
+                            visible = True
+                        if not visible:
+                            wa = Screen.PrimaryScreen.WorkingArea
+                            w = min(saved.Width, wa.Width)
+                            h = min(saved.Height, wa.Height)
+                            saved = Rectangle(wa.X + (wa.Width - w) // 2,
+                                              wa.Y + (wa.Height - h) // 2, w, h)
+                        native.Bounds = saved            # restore the previous size/pos
+                        self._maxRestore = None
+                    else:
+                        self._maxRestore = native.Bounds  # remember where we were
+                        wa = Screen.FromControl(native).WorkingArea
+                        native.Bounds = Rectangle(wa.X, wa.Y, wa.Width, wa.Height)
+                except Exception:
+                    pass
 
             native.BeginInvoke(Action(toggle))
             return
@@ -543,6 +592,22 @@ class Api:
         try:
             WINDOW.toggle_fullscreen()
             FULLSCREEN = not FULLSCREEN
+            # fullscreen resizes the window, so any pending maximize-restore bounds
+            # are now stale — drop them so the next Maximize press captures fresh.
+            self._maxRestore = None
+            if not FULLSCREEN:
+                # pywebview re-adds the native title bar when LEAVING fullscreen on a
+                # frameless window — which draws the OS min/max/close on top of our
+                # own custom titlebar (the "duplicate buttons" bug). Force the window
+                # back to borderless so only our custom controls remain.
+                try:
+                    from System.Windows.Forms import FormBorderStyle
+                    from System import Action
+                    native = WINDOW.native
+                    borderless = getattr(FormBorderStyle, "None")
+                    native.BeginInvoke(Action(lambda: setattr(native, "FormBorderStyle", borderless)))
+                except Exception:
+                    pass
         except Exception:
             pass
         return FULLSCREEN

@@ -28,6 +28,7 @@
     else if (event === "drumsTimeline") updateDrumsTimeline(payload);
     else if (event === "inputState") applyInputState(payload);
     else if (event === "inputNote") { /* reserved for future visual keyboard */ }
+    else if (event === "practiceMidiNote") onMidiNote(payload.note, payload.on);
     else if (event === "notes") payload.events.forEach(handleNote);
     else if (event === "update") showUpdate(payload);
   };
@@ -66,7 +67,7 @@
 
   // ---------- SOUND (mic illusion) ----------
   let soundOn = false, soundMode = "piano";
-  let audioCtx = null, masterGain = null, limiter = null, piano = null;
+  let audioCtx = null, masterGain = null, limiter = null, softClip = null, piano = null;
   // The soundfont samples are mastered quiet, so we run the master bus hot at a
   // fixed 3x, with a limiter right after it so the extra loudness never clips —
   // even on a full chord. There's no in-app volume slider on purpose: people set
@@ -115,26 +116,55 @@
     return buf;
   }
 
+  // A transparent soft-clip "ceiling" curve for a WaveShaper. Below ±0.7 it's a
+  // pure pass-through (no coloration on normal playing); above that it smoothly
+  // saturates toward ±1.0 so peaks from loud chords can NEVER hard-clip — the
+  // hard clip is what produced the "buzzy" edge. Used with oversample 4x so the
+  // shaping itself doesn't alias (aliasing = its own kind of harshness).
+  function makeCeilingCurve() {
+    const n = 2048, c = new Float32Array(n), knee = 0.7;
+    for (let i = 0; i < n; i++) {
+      const x = (i / (n - 1)) * 2 - 1, a = Math.abs(x);
+      c[i] = a <= knee ? x : Math.sign(x) * (knee + (1 - knee) * Math.tanh((a - knee) / (1 - knee)));
+    }
+    return c;
+  }
+
   function ensureCtx(minGain) {
     if (!audioCtx) {
       try {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         masterGain = audioCtx.createGain();
         masterGain.gain.value = PIANO_GAIN;
-        // brick-wall-ish limiter on the master bus: lets us push volume past 1.0
-        // for real loudness while catching peaks so chords don't clip/distort.
+
+        // Master chain: masterGain(hot 3x) -> soft-clip ceiling -> gentle glue -> out
+        //
+        // The old chain slammed the hot bus straight into a hard-knee ratio-20
+        // brick-wall limiter (knee 0, attack 3ms). On dense chords that summed
+        // way past 0dB, so the 3ms attack let transients hard-clip AND the abrupt
+        // hard knee pumped/intermodulated — that was the buzz. Now a WaveShaper
+        // rounds peaks transparently (musical, never hard-clips), and the limiter
+        // is just soft glue after it (soft knee, gentle ratio) so it can't pump.
+        softClip = audioCtx.createWaveShaper();
+        softClip.curve = makeCeilingCurve();
+        softClip.oversample = "4x";
+
         limiter = audioCtx.createDynamicsCompressor();
         limiter.threshold.value = -2.0;
-        limiter.knee.value = 0;
-        limiter.ratio.value = 20;
-        limiter.attack.value = 0.003;
-        limiter.release.value = 0.25;
+        limiter.knee.value = 6.0;
+        limiter.ratio.value = 6;
+        limiter.attack.value = 0.005;
+        limiter.release.value = 0.15;
+
+        masterGain.connect(softClip);
+        softClip.connect(limiter);
         limiter.connect(audioCtx.destination);
-        masterGain.connect(limiter);
         try {
           const conv = audioCtx.createConvolver();
           conv.buffer = makeImpulse(2.4, 2.6);
-          const wet = audioCtx.createGain(); wet.gain.value = 0.18;
+          const wet = audioCtx.createGain(); wet.gain.value = 0.14;
+          // reverb send taps the dry bus and returns POST soft-clip so its tail
+          // doesn't pile energy onto the ceiling stage.
           masterGain.connect(conv); conv.connect(wet); wet.connect(limiter);
         } catch (_) {}
       } catch (e) { return; }
@@ -457,6 +487,7 @@
     }
 
     if (sgOpen) stageStateChanged();
+    msStateChanged();
   }
 
   function setPlaying(running, paused, selectedIsPlaying) {
@@ -485,6 +516,7 @@
   function updateTimeline(p) {
     scrubbingTotal = p.total || scrubbingTotal;
     if (sgOpen) stageSync(p.current);
+    msSync(p.current);
     if (scrubDragging) return;
     const parts = (p.text || "").split(" / ");
     $("#tCur").textContent = parts[0] || fmt(p.current);
@@ -524,6 +556,7 @@
     else if (name === "drums") { const a = api(); if (a && a.drumsState) a.drumsState().then(applyDrumsState); }
     else if (name === "keys") { const a = api(); if (a && a.inputState) a.inputState().then(applyInputState); }
     else if (name === "settings") { const a = api(); if (a && a.getState) a.getState().then((s) => applyHotkeys(s.hotkeys)); }
+    if (name === "player") msEnter(); else msLeave();
   }
 
   // ---------- MIDI Hub ----------
@@ -862,25 +895,60 @@
   }
 
   // ---------- HOTKEYS ----------
+  const HK_DEFAULTS = { play: "F1", pause: "F2", stop: "F3", speedup: "F4", slowdown: "F5", prevtrack: "F6", nexttrack: "F7" };
+  function hotkeyLabel(v) {
+    if (v === "mouse:x1") return "Mouse 4";
+    if (v === "mouse:x2") return "Mouse 5";
+    const m = { up: "↑", down: "↓", left: "←", right: "→", space: "Space", enter: "Enter", tab: "Tab" };
+    return m[v] || String(v).toUpperCase();
+  }
   function applyHotkeys(hk) {
-    if (!hk) return;
+    hk = hk || {};
     $$(".hk-key").forEach((b) => {
-      const v = hk[b.dataset.action];
-      if (v) b.textContent = String(v).toUpperCase();
+      const a = b.dataset.action, v = hk[a];
+      b.textContent = v === undefined ? (HK_DEFAULTS[a] || "—") : (v === "" ? "None" : hotkeyLabel(v));
+      b.classList.toggle("unbound", v === "");
     });
   }
   let capturing = null;
   function startCapture(btn) {
-    if (capturing) capturing.classList.remove("capturing");
-    capturing = btn; btn.classList.add("capturing"); btn.textContent = "…";
+    const prev = capturing;
+    capturing = btn;
+    if (prev) prev.classList.remove("capturing");
+    applyHotkeys((state && state.hotkeys) || {});   // restore any stale "Press a key…" label
+    btn.classList.add("capturing"); btn.textContent = "Press a key…";
+  }
+  function finishCapture(name) {
+    const btn = capturing; if (!btn) return;
+    capturing = null; btn.classList.remove("capturing");
+    if (name === "__cancel__" || name == null) { applyHotkeys((state && state.hotkeys) || {}); return; }
+    const val = name === "__none__" ? "" : name;   // "" persists as unbound (None)
+    const a = api();
+    if (a && a.setHotkey) a.setHotkey(btn.dataset.action, val).then((s) => applyHotkeys(s.hotkeys));
+    else applyHotkeys((state && state.hotkeys) || {});
+  }
+  function codeToName(code) {
+    const m = {
+      BracketLeft: "[", BracketRight: "]", Semicolon: ";", Quote: "'", Backquote: "`",
+      Comma: ",", Period: ".", Slash: "/", Backslash: "\\", Minus: "-", Equal: "=",
+      IntlBackslash: "\\", IntlRo: "/",
+    };
+    return m[code] || null;
   }
   function jsKeyToName(e) {
     const k = e.key;
-    if (k === " ") return "space";
+    if (k === "Escape") return "__cancel__";
+    if (k === "Backspace" || k === "Delete") return "__none__";
+    if (k === " " || k === "Spacebar") return "space";
     if (/^F\d{1,2}$/.test(k)) return k.toLowerCase();
-    if (k.length === 1) return k.toLowerCase();
-    const map = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right", Enter: "enter", Escape: null, Tab: null };
-    return map[k] !== undefined ? map[k] : null;
+    const named = {
+      ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
+      Enter: "enter", Tab: "tab", Home: "home", End: "end", PageUp: "page up",
+      PageDown: "page down", Insert: "insert",
+    };
+    if (named[k]) return named[k];
+    if (k && k.length === 1 && k !== "Dead") return k.toLowerCase();   // letters, digits, symbols
+    return codeToName(e.code);   // dead keys / others → bind the physical key
   }
 
   // shared helpers
@@ -909,6 +977,8 @@
   let freeMap = {};                 // "code|shift" -> note (for free play + audio feedback)
   const freeHeld = {};              // event.code -> note currently held (free play)
   let prMode = "step";              // "step" | "rhythm" | "free"
+  let prInput = "kbd";              // "kbd" (QWERTY) | "midi" (real MIDI keyboard)
+  let prMidiLevelWas = "faith";     // remembers the Arrange level while in MIDI mode
   let prRecords = {};               // { step:{...}, rhythm:{...} }
   const prNoteX = {}, prKeyEls = {};
   const hwBlocks = new Map();
@@ -928,6 +998,10 @@
 
   const isSharp = (n) => !WHITE_PC.has(((n % 12) + 12) % 12);
   const charForNote = (n) => prKeymap[n] != null ? prKeymap[n] : prKeymap[String(n)];
+  const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  const noteName = (n) => NOTE_NAMES[((n % 12) + 12) % 12];   // for MIDI-mode key labels
+  // falling-tile / key label: note name for a real MIDI keyboard, QWERTY char otherwise
+  const tileText = (note, char) => (prInput === "midi") ? noteName(note) : char;
 
   // Map a mapping character to the PHYSICAL key + whether Shift is involved, so we
   // can match presses by physical key. This is what fixes chords that mix shifted
@@ -1005,6 +1079,15 @@
       const a = api(); if (a && a.practiceActive) a.practiceActive(true);
     }
     if (prMode === "sheet") enterSheet();   // restore the Sheet panel on view re-entry
+    syncInputUI();
+    refreshInputAvailability();              // show the Input control only if a MIDI device exists
+    if (prInput === "midi") {                // re-open the MIDI listener we closed on leave
+      populateMidiDevices().then((list) => {
+        const sel = $("#prMidiDev");
+        const dev = (sel && sel.value) || (list && list[0]) || "";
+        const a = api(); if (dev && a && a.practiceMidiStart) a.practiceMidiStart(dev);
+      });
+    }
     renderRecords();
   }
 
@@ -1041,6 +1124,7 @@
     freePlayStop();
     sheetStop();
     clearFreeTrails();
+    if (prInput === "midi") { const a = api(); if (a && a.practiceMidiStop) a.practiceMidiStop(); }
     Object.keys(freeHeld).forEach((k) => delete freeHeld[k]);
     if (!prRunning) return;
     prRunning = false;
@@ -1048,7 +1132,7 @@
   }
 
   let prCurrentPath = "", prSongKey = "";
-  function prLoad(res) {
+  function prLoad(res) {  // note: prRawSteps/prApplyArrange set below feed all modes
     if (!res || !res.ok) {
       const msg = res && res.error === "empty"
         ? "This file has no notes Velo can map to keys."
@@ -1058,7 +1142,8 @@
       $("#prEmpty").querySelector("p").textContent = msg;
       return;
     }
-    prSteps = res.steps || [];
+    prRawSteps = res.steps || [];
+    prApplyArrange();
     prKeymap = res.keymap || {};
     prMapChars = new Set(Object.values(prKeymap));
     prCodeSet = new Set([...prMapChars].map(charToCode).filter(Boolean));
@@ -1133,6 +1218,7 @@
     stage.style.width = fullW + "px";
     stage.style.setProperty("--ph", ph + "px");
     stage.style.setProperty("--slot", "46px");
+    stage.style.setProperty("--kw", prWhiteW);   // falling-tile width tracks the key width
 
     const piano = $("#prPiano");
     piano.innerHTML = "";
@@ -1157,10 +1243,12 @@
       }
       prNoteX[n] = x;
       el.dataset.note = n;
-      const ch = charForNote(n);
-      if (ch != null) {
+      // MIDI input -> label the white keys with note names (a real pianist reads
+      // C D E F G A B, not QWERTY letters). QWERTY input -> the keyboard char.
+      const label = (prInput === "midi") ? (white ? noteName(n) : "") : charForNote(n);
+      if (label != null && label !== "") {
         const lbl = document.createElement("span");
-        lbl.className = "pk-lbl"; lbl.textContent = ch;
+        lbl.className = "pk-lbl"; lbl.textContent = label;
         el.appendChild(lbl);
       }
       prKeyEls[n] = el;
@@ -1188,7 +1276,7 @@
       const s = document.createElement("span");
       s.className = "hw-note" + (isSharp(note.note) ? " sharp" : "");
       s.style.setProperty("--x", prNoteX[note.note] || 0);
-      s.textContent = note.char;
+      s.textContent = tileText(note.note, note.char);
       s.dataset.note = note.note;
       b.appendChild(s);
     });
@@ -1310,7 +1398,7 @@
       const s = document.createElement("span");
       s.className = "hw-note" + (isSharp(note.note) ? " sharp" : "");
       s.style.setProperty("--x", prNoteX[note.note] || 0);
-      s.textContent = note.char; s.dataset.note = note.note;
+      s.textContent = tileText(note.note, note.char); s.dataset.note = note.note;
       b.appendChild(s);
     });
     $("#prTrack").appendChild(b);
@@ -1471,6 +1559,15 @@
   // ===== FREE PLAY (sandbox piano) ===============================
   function setHint() {
     const el = $("#prHint"); if (!el) return;
+    if (prInput === "midi") {
+      // real MIDI keyboard: no QWERTY / Shift talk, play the lit keys on your piano
+      el.innerHTML = prMode === "rhythm"
+        ? "Play each note on your <b>MIDI keyboard</b> as it reaches the line — <b>Perfect</b>/<b>Good</b>/<b>Miss</b>."
+        : prMode === "free"
+          ? "Free play — play your <b>MIDI keyboard</b> (or click the keys). Pick a song and hit <b>Play (preview)</b> to watch it here."
+          : "Play the highlighted keys on your <b>MIDI keyboard</b>. A wrong note won't pass until you hit the right one.";
+      return;
+    }
     el.innerHTML = prMode === "free"
       ? "Free play — type or click the keys (sharps need <b>Shift</b>). Pick a song and hit <b>Play (preview)</b> to watch it here. Your Player <b>play hotkey</b> also works here — it autoplays the Player's selected song for real (and into games)."
       : prMode === "rhythm"
@@ -1643,7 +1740,7 @@
           if (prNoteX[n.note] == null) return;   // note off the 61-key board
           const s = document.createElement("span");
           s.className = "hw-note" + (isSharp(n.note) ? " sharp" : "");
-          s.style.setProperty("--x", prNoteX[n.note]); s.textContent = n.char;
+          s.style.setProperty("--x", prNoteX[n.note]); s.textContent = tileText(n.note, n.char);
           el.appendChild(s);
         });
         track.appendChild(el); fpTiles.set(i, el);
@@ -1708,7 +1805,8 @@
   // Loads a song for Free-play auto-play WITHOUT switching to step/rhythm — keeps
   // the 61-key piano and just enables the Play button.
   function freeLoadSong(res) {
-    prSteps = res.steps || [];
+    prRawSteps = res.steps || [];
+    prApplyArrange();
     prSongKey = res.name || "";
     prDuration = res.duration || 0;
     if (res.keymap) prKeymap = res.keymap;
@@ -1784,6 +1882,135 @@
     flashWrong(ch);
     bumpCombo();
     updateHud();
+  }
+
+  // ---------- MIDI input (real keyboard) ----------
+  // Matching by NOTE number (exact octave) — no Shift ambiguity like QWERTY.
+  // Sound + key-light are done centrally in onMidiNote; these only score.
+  function prHitStepNote(note) {
+    const i = prRemaining.findIndex((n) => n.note === note);
+    if (i < 0) { registerWrong(""); return; }      // wrong note
+    const noteObj = prRemaining[i];
+    prRemaining.splice(i, 1);
+    prHits++; prCombo++; if (prCombo > prMaxCombo) prMaxCombo = prCombo;
+    if (!prStartT) prStartT = Date.now();
+    const kel = prKeyEls[noteObj.note];
+    if (kel) { kel.classList.remove("want"); kel.classList.add("hit"); }
+    const blk = hwBlocks.get(prIdx);
+    if (blk) {
+      const pill = blk.querySelector('.hw-note[data-note="' + noteObj.note + '"]');
+      if (pill) { pill.classList.remove("sharp"); pill.classList.add("done"); }
+    }
+    bumpCombo();
+    if (prRemaining.length === 0) advance(); else updateHud();
+  }
+
+  function ryHitNote(note) {
+    let best = -1, bestdt = 999;
+    for (let i = trainerFrom(); i <= trainerTo(); i++) {
+      if (ryJudged.has(i)) continue;
+      const d = prSteps[i].t - ryPlayhead;
+      if (d > RY_GOOD) break;
+      if (d < -RY_GOOD) continue;
+      if (prSteps[i].notes.some((n) => n.note === note)) {
+        if (Math.abs(d) < Math.abs(bestdt)) { best = i; bestdt = d; }
+      }
+    }
+    if (best >= 0) ryJudgeHit(best, bestdt); else ryWrong();
+  }
+
+  // A note arrived from the real MIDI keyboard (only acts in MIDI-input mode).
+  function onMidiNote(note, on) {
+    if (prInput !== "midi") return;
+    if (!on) {   // note released — just un-light the key
+      const k = prKeyEls[note]; if (k && !noteHeld(note)) k.classList.remove("hit");
+      return;
+    }
+    ensurePracticeAudio();
+    prPlayNote(note);                                  // always sound what was played
+    const k = prKeyEls[note]; if (k) k.classList.add("hit");
+    if (prMode === "step") { if (prRunning) prHitStepNote(note); }
+    else if (prMode === "rhythm") { if (prRunning) ryHitNote(note); }
+    else if (prMode === "sheet") { if (!shPlaying) sheetHitNote(note); }
+    // free play: the sound above is all it needs
+  }
+
+  function populateMidiDevices() {
+    const sel = $("#prMidiDev"); const a = api();
+    if (!sel || !a || !a.practiceMidiDevices) return Promise.resolve([]);
+    return a.practiceMidiDevices().then((list) => {
+      list = list || [];
+      const cur = sel.value;
+      sel.innerHTML = "";
+      if (!list.length) {
+        const o = document.createElement("option");
+        o.value = ""; o.textContent = "No MIDI device found"; o.disabled = true; o.selected = true;
+        sel.appendChild(o);
+      } else {
+        list.forEach((d) => {
+          const o = document.createElement("option"); o.value = d; o.textContent = d;
+          if (d === cur) o.selected = true;
+          sel.appendChild(o);
+        });
+      }
+      return list;
+    }).catch(() => []);
+  }
+
+  function syncInputUI() {
+    $$("#prInput .seg-opt").forEach((x) => x.classList.toggle("active", x.dataset.inp === prInput));
+    const dev = $("#prMidiDev"); if (dev) dev.hidden = (prInput !== "midi");
+    updateArrangeVis();
+  }
+
+  // Show the Input control ONLY when a MIDI keyboard is present — QWERTY-only users
+  // never see it. Also handles unplug (reverts to QWERTY) and hot-plug.
+  function refreshInputAvailability() {
+    const wrap = $("#prInputWrap"); const a = api();
+    if (!wrap || !a || !a.practiceMidiDevices) return;
+    a.practiceMidiDevices().then((list) => {
+      const has = !!(list && list.length);
+      wrap.hidden = !has;
+      if (!has && prInput === "midi") setPracticeInput("kbd");   // device unplugged
+      else if (has && prInput === "midi") populateMidiDevices(); // keep the list fresh
+    }).catch(() => {});
+  }
+
+  // Switch the practice input source between the QWERTY keyboard and a real MIDI
+  // keyboard. MIDI = a real piano, so we force Faithful (full chords) + hide Arrange.
+  function setPracticeInput(mode) {
+    if (mode === prInput) return;
+    const a = api();
+    ensurePracticeAudio();   // this click is a user gesture — unlock audio for MIDI notes
+    if (mode === "midi") {
+      prInput = "midi";
+      prMidiLevelWas = prLevel;
+      if (prLevel !== "faith") {
+        prLevel = "faith";
+        $$("#prArrange .seg-opt").forEach((x) => x.classList.toggle("active", x.dataset.arr === "faith"));
+        if (prRawSteps.length) reArrange();
+      }
+      syncInputUI();
+      if (prLoaded && prMode !== "sheet") rebuildPracticeLayout();   // relabel keys with note names
+      setHint();
+      populateMidiDevices().then((list) => {
+        const sel = $("#prMidiDev");
+        const dev = (sel && sel.value) || (list && list[0]) || "";
+        if (dev && a && a.practiceMidiStart) a.practiceMidiStart(dev);
+      });
+    } else {
+      prInput = "kbd";
+      if (a && a.practiceMidiStop) a.practiceMidiStop();
+      // restore the Arrange level they had before switching to MIDI
+      if (prMidiLevelWas !== prLevel) {
+        prLevel = prMidiLevelWas;
+        $$("#prArrange .seg-opt").forEach((x) => x.classList.toggle("active", x.dataset.arr === prLevel));
+        if (prRawSteps.length) reArrange();
+      }
+      syncInputUI();
+      if (prLoaded && prMode !== "sheet") rebuildPracticeLayout();   // relabel keys back to QWERTY
+      setHint();
+    }
   }
 
   function updateHud() {
@@ -1901,45 +2128,97 @@
   // collisions / too many keys at once), keeping the bass + melody — so ANY MIDI
   // becomes playable, which VP's hand-made sheets can't do automatically. The
   // player watches it play, follows the lime highlight, and can Copy the sheet.
-  const SHEET_CAP = { faith: Infinity, bal: 5, easy: 3 };
-  let shLevel = "bal";
-  let shRaf = 0, shPlaying = false, shPlayhead = 0, shLast = 0, shIdx = 0, shSpeedSel = 1, shLastHi = 0;
-  let shTokens = [];                 // [{i,notes,chord,trim} | {bar:true}]
-  const shStepEls = new Map();       // step index -> token element
-  const shNotesAt = new Map();       // step index -> reduced notes (for playback)
-  let shRemaining = [], shCurIdx = 0;   // play-along: notes still to press for the current token
+  // ---------- QWERTY ARRANGER (make any MIDI playable on a keyboard) ----------
+  // Levels: "faith" = the raw song, untouched · "bal" = a playable arrangement that
+  // keeps every note but breaks impossible chords into a fast ROLL · "easy" = the
+  // melody line only. It NEVER transposes, so the letters stay identical to what
+  // you'd press on Virtual Piano / Roblox — you just learn the real hand motion.
+  let prLevel = "faith";      // default: leave the raw song alone unless asked
+  let prRawSteps = [];        // steps straight from the MIDI; prSteps is the arranged view
+  const ARR_ROLL_GAP = 0.045; // seconds between the sub-hits of a rolled chord
+  const ARR_CAP = 4;          // max keys pressed together in one sub-chord
 
-  // The physical key a char uses, ignoring Shift, so "1" and "!" (Shift+1) collide
-  // on the SAME key. charToCode already folds sharps/uppercase onto their base key.
-  function sheetPhysKey(ch) { return charToCode(ch) || ("x" + ch); }
+  const arrKey = (ch) => charToCode(ch) || ("x" + ch);   // physical key, ignoring Shift
 
-  // Trim a chord to what a hand can actually press, the way MIDI->VP converters do:
-  //   1) de-duplicate notes landing on the same physical key (keep the higher one)
-  //   2) cap the count, always preserving the bass (lowest) + melody (highest)
-  function sheetReduce(notes, cap) {
-    const byKey = new Map();
-    notes.forEach((n) => {
-      const k = sheetPhysKey(n.char);
-      const ex = byKey.get(k);
-      if (!ex || n.note > ex.note) byKey.set(k, n);
-    });
-    let kept = [...byKey.values()].sort((a, b) => a.note - b.note);
-    if (kept.length > cap) {
-      const bass = kept[0], melody = kept[kept.length - 1];
-      const mids = kept.slice(1, -1).sort((a, b) => b.note - a.note);   // high -> low
-      const pick = cap >= 2 ? [bass, melody] : [melody];
-      for (const m of mids) { if (pick.length >= cap) break; pick.push(m); }
-      kept = pick.sort((a, b) => a.note - b.note);
-    }
-    return kept;
+  function arrCap(g) {   // trim a group to ARR_CAP, keeping bass + melody
+    if (g.length <= ARR_CAP) return g;
+    const lo = g[0], hi = g[g.length - 1];
+    const mids = g.slice(1, -1).sort((a, b) => b.note - a.note);
+    const pick = [lo, hi];
+    for (const m of mids) { if (pick.length >= ARR_CAP) break; pick.push(m); }
+    return pick.sort((a, b) => a.note - b.note);
   }
 
-  // Turn prSteps into the token list at the current playability level.
+  // One raw chord -> array of sub-chords. 1 = a simultaneous press; >1 = a ROLL
+  // (played in quick succession — the piano's sustain makes it sound like the
+  // full chord, so no note is lost). Impossible cases handled: notes on the same
+  // physical key, and chords mixing Shift + no-Shift (e.g. "$" with a letter).
+  function arrangeChord(notes, level) {
+    if (level === "faith" || notes.length <= 1) return [notes.slice()];
+    const byKey = new Map();   // de-dup same physical key (keep the higher pitch)
+    notes.forEach((n) => { const k = arrKey(n.char); const ex = byKey.get(k); if (!ex || n.note > ex.note) byKey.set(k, n); });
+    const kept = [...byKey.values()].sort((a, b) => a.note - b.note);
+    const melody = kept[kept.length - 1];
+    if (level === "easy") return [[melody]];   // pure melody line — always playable
+    const shifted = kept.filter((n) => charNeedsShift(n.char));
+    const plain = kept.filter((n) => !charNeedsShift(n.char));
+    if (!shifted.length || !plain.length) return [arrCap(kept)];   // already one Shift-state
+    // mixed Shift -> roll: play the non-melody group first, land on the melody's group
+    const melShift = charNeedsShift(melody.char);
+    return [arrCap(melShift ? plain : shifted), arrCap(melShift ? shifted : plain)];
+  }
+
+  // Expand raw steps into the arranged view (rolled chords -> consecutive steps).
+  function arrangeSteps(raw, level) {
+    if (level === "faith") return raw.slice();
+    const out = [];
+    for (const st of raw) {
+      arrangeChord(st.notes, level).forEach((g, gi) => {
+        if (g.length) out.push({ t: Math.round((st.t + gi * ARR_ROLL_GAP) * 1e4) / 1e4, notes: g, roll: gi > 0 });
+      });
+    }
+    // a roll's 2nd sub-step (t+gap) can land after the next raw step — keep the
+    // list strictly ascending by time so the ordered matchers/judges don't break.
+    out.sort((a, b) => a.t - b.t);
+    return out;
+  }
+
+  function prApplyArrange() {
+    prSteps = arrangeSteps(prRawSteps, prLevel);
+    prTotalNotes = prSteps.reduce((a, s) => a + s.notes.length, 0);   // keep the HUD count in sync
+  }
+
+  // Re-arrange after the level changes, then refresh whichever mode is active.
+  function reArrange() {
+    prApplyArrange();
+    RY_TRAINER.on = false; RY_TRAINER.from = 0; RY_TRAINER.to = Math.max(0, prSteps.length - 1);
+    if (typeof renderTrainerRange === "function") renderTrainerRange();
+    if (prMode === "sheet") {
+      const wasPlaying = shPlaying; sheetStop(); sheetRender(); if (wasPlaying) sheetStart();
+    } else if (prMode === "free") {
+      freePlayStop(); updateFreePlayBtn();   // preview just uses the new steps next Play
+    } else if (prSteps.length) {
+      restartPractice();
+    }
+  }
+
+  // The Arrange control only makes sense for the QWERTY modes (not Free play).
+  function updateArrangeVis() {
+    // Arrange makes no sense in Free play, nor with a real MIDI keyboard (full chords).
+    const el = $("#prArrange"); if (el) el.hidden = (prMode === "free" || prInput === "midi");
+  }
+
+  let shRaf = 0, shPlaying = false, shPlayhead = 0, shLast = 0, shIdx = 0, shSpeedSel = 1, shLastHi = 0;
+  let shTokens = [];                 // [{i,notes,chord,roll} | {bar:true}]
+  const shStepEls = new Map();       // step index -> token element
+  const shNotesAt = new Map();       // step index -> notes (for playback)
+  let shRemaining = [], shCurIdx = 0;   // play-along: notes still to press for the current token
+
+  // Turn the (already-arranged) prSteps into the token list.
   function sheetBuild() {
     shTokens = []; shNotesAt.clear();
     const steps = prSteps;
     if (!steps.length) return;
-    const cap = SHEET_CAP[shLevel];
     // phrase break (|) when a gap is clearly bigger than the song's typical spacing
     const gaps = [];
     for (let i = 1; i < steps.length; i++) { const g = steps[i].t - steps[i - 1].t; if (g > 0) gaps.push(g); }
@@ -1947,13 +2226,11 @@
     const med = gaps.length ? gaps[Math.floor(gaps.length / 2)] : 0.5;
     const barGap = Math.max(0.5, med * 3.2);
     steps.forEach((st, i) => {
-      if (i > 0 && (st.t - steps[i - 1].t) >= barGap) shTokens.push({ bar: true });
-      const full = st.notes;
-      const notes = (cap === Infinity)
-        ? full.slice().sort((a, b) => a.note - b.note)
-        : sheetReduce(full, cap);
+      // no bar right before a roll continuation — it belongs to the previous chord
+      if (i > 0 && !st.roll && (st.t - steps[i - 1].t) >= barGap) shTokens.push({ bar: true });
+      const notes = st.notes.slice().sort((a, b) => a.note - b.note);
       shNotesAt.set(i, notes);
-      shTokens.push({ i, notes, chord: notes.length > 1, trim: notes.length < full.length });
+      shTokens.push({ i, notes, chord: notes.length > 1, roll: !!st.roll });
     });
   }
 
@@ -1987,7 +2264,7 @@
         frag.appendChild(b); return;
       }
       const el = document.createElement("span");
-      el.className = "sh-tok" + (t.chord ? " sh-chord" : "") + (t.trim ? " sh-trim" : "");
+      el.className = "sh-tok" + (t.chord ? " sh-chord" : "") + (t.roll ? " sh-roll" : "");
       if (t.chord) { const o = document.createElement("span"); o.className = "sh-brk"; o.textContent = "["; el.appendChild(o); }
       t.notes.forEach((n) => {
         const c = document.createElement("span");
@@ -2165,7 +2442,8 @@
 
   // A freshly chosen song while Sheet mode is active.
   function sheetLoadSong(res) {
-    prSteps = res.steps || [];
+    prRawSteps = res.steps || [];
+    prApplyArrange();
     if (res.keymap) prKeymap = res.keymap;
     prMapChars = new Set(Object.values(prKeymap));
     prCodeSet = new Set([...prMapChars].map(charToCode).filter(Boolean));
@@ -2207,6 +2485,7 @@
     wrap.style.width = fullW + "px";
     wrap.style.setProperty("--ph", ph + "px");
     wrap.style.setProperty("--slot", "46px");
+    wrap.style.setProperty("--kw", sgWhiteW);
     const piano = $("#sgPiano"); piano.innerHTML = "";
     for (const k in sgNoteX) delete sgNoteX[k];
     for (const k in sgKeyEls) delete sgKeyEls[k];
@@ -2311,6 +2590,310 @@
     document.body.classList.remove("stage-on");
   }
 
+  // ---------- MINI STAGE (Player view, single-canvas live visualizer) ----------
+  // A compact falling-notes visualizer drawn entirely on one <canvas> (no per-tile
+  // DOM churn → cheap + smooth). It only animates while a song is actually playing
+  // AND the Player view is on screen; paused/idle it freezes on a single static
+  // frame (zero CPU). Purely visual — it never voices audio (the backend/full Stage
+  // owns sound), so it can never double up notes.
+  const MS_LOOKAHEAD = 2.6;           // seconds of notes visible in the highway
+  let msCanvas = null, msCtx = null, msDpr = 1, msW = 0, msH = 0, msInited = false;
+  let msView = false;                 // is the Player view currently shown
+  let msSteps = [], msPath = null, msLoadingPath = null;
+  let msMin = 60, msMax = 72, msLo = 60, msHi = 72;
+  let msWhiteW = 18, msKbTop = 0;
+  const msNoteX = {}, msKeyRect = {}, msFlash = {};   // msFlash: note -> expiry ms
+  let msPlaying = false, msSpeed = 1, msPlayhead = 0, msBaseSec = 0, msBaseWall = 0;
+  let msFlashIx = 0, msRaf = 0;
+  let msKbH = 0, msBlackH = 0;                          // keyboard geometry (per layout)
+  let msGW = null, msGWLit = null, msGB = null, msGBLit = null;  // cached key gradients
+  const msTheme = { accent: "#c8ff4d", dim: "#9fd62f", lite: "#eaffb0", rgb: "200,255,77" };
+
+  function msReadTheme() {
+    const cs = getComputedStyle(document.body);
+    const g = (k, d) => (cs.getPropertyValue(k) || d).trim();
+    msTheme.rgb = g("--accent-rgb", "200,255,77");
+    msTheme.accent = g("--accent", "#c8ff4d");
+    msTheme.dim = g("--accent-dim", "#9fd62f");
+    msTheme.lite = g("--accent-lite", "#eaffb0");
+  }
+
+  function msRoundRect(x, y, w, h, r) {
+    const ctx = msCtx; r = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function msInit() {
+    if (msInited) return;
+    msCanvas = $("#msCanvas"); if (!msCanvas) return;
+    msCtx = msCanvas.getContext("2d");
+    msInited = true;
+    const card = $("#miniStage");
+    if (card) card.addEventListener("click", () => stageOpen());
+    if (window.ResizeObserver) new ResizeObserver(() => msResize()).observe(msCanvas.parentElement);
+  }
+
+  function msResize() {
+    if (!msCanvas) return;
+    const wrap = msCanvas.parentElement, r = wrap.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2) return;
+    msDpr = Math.min(2, window.devicePixelRatio || 1);
+    msW = r.width; msH = r.height;
+    msCanvas.width = Math.round(msW * msDpr);
+    msCanvas.height = Math.round(msH * msDpr);
+    msCtx.setTransform(msDpr, 0, 0, msDpr, 0, 0);
+    msLayout();
+    if (!msRaf) msDrawStatic();
+  }
+
+  function msLayout() {
+    // Always a full, fixed 88-key piano (A0..C8) — never re-stretch to the song's
+    // range, so it looks like a real piano both idle and playing (notes just fall
+    // onto their true positions; the rare note outside 88 is simply not drawn).
+    const lo = 21, hi = 108;
+    msLo = lo; msHi = hi;
+    let whites = 0;
+    for (let n = lo; n <= hi; n++) if (!isSharp(n)) whites++;
+    msWhiteW = msW / Math.max(1, whites);
+    const kbH = Math.max(34, Math.min(60, msH * 0.36));
+    msKbTop = msH - kbH;
+    msKbH = kbH; msBlackH = kbH * 0.62;
+    const blackW = msWhiteW * 0.66;
+    for (const k in msNoteX) delete msNoteX[k];
+    for (const k in msKeyRect) delete msKeyRect[k];
+    let wi = 0;
+    for (let n = lo; n <= hi; n++) {
+      if (!isSharp(n)) { const x = wi * msWhiteW; msNoteX[n] = x + msWhiteW / 2; msKeyRect[n] = { x: x, w: msWhiteW, white: true }; wi++; }
+      else { const c = wi * msWhiteW; msNoteX[n] = c; msKeyRect[n] = { x: c - blackW / 2, w: blackW, white: false }; }
+    }
+    // cache the vertical key gradients (x-independent → one per state, reused for
+    // every key each frame instead of allocating ~50 gradients per paint)
+    if (msCtx) {
+      msReadTheme();
+      msGW = msCtx.createLinearGradient(0, msKbTop, 0, msH);
+      msGW.addColorStop(0, "#f4f4ef"); msGW.addColorStop(0.55, "#dedee4"); msGW.addColorStop(1, "#b4b4be");
+      msGWLit = msCtx.createLinearGradient(0, msKbTop, 0, msH);
+      msGWLit.addColorStop(0, msTheme.lite); msGWLit.addColorStop(0.5, msTheme.accent); msGWLit.addColorStop(1, msTheme.dim);
+      msGB = msCtx.createLinearGradient(0, msKbTop, 0, msKbTop + msBlackH);
+      msGB.addColorStop(0, "#34343e"); msGB.addColorStop(0.5, "#1c1c22"); msGB.addColorStop(1, "#0c0c10");
+      msGBLit = msCtx.createLinearGradient(0, msKbTop, 0, msKbTop + msBlackH);
+      msGBLit.addColorStop(0, msTheme.accent); msGBLit.addColorStop(1, msTheme.dim);
+    }
+  }
+
+  function msRoundRectBottom(x, y, w, h, r) {
+    const ctx = msCtx; r = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x, y); ctx.lineTo(x + w, y);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.closePath();
+  }
+
+  function msPaintBg() {
+    const ctx = msCtx;
+    ctx.clearRect(0, 0, msW, msH);
+    // deep base
+    let bg = ctx.createLinearGradient(0, 0, 0, msH);
+    bg.addColorStop(0, "#090a0c"); bg.addColorStop(0.72, "#0b0c10"); bg.addColorStop(1, "#0e0f15");
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, msW, msH);
+    // ambient lime glow rising from behind the keyboard — gives the highway life
+    const rg = ctx.createRadialGradient(msW / 2, msKbTop, 0, msW / 2, msKbTop, Math.max(msW * 0.4, 240));
+    rg.addColorStop(0, "rgba(" + msTheme.rgb + ",.13)");
+    rg.addColorStop(0.55, "rgba(" + msTheme.rgb + ",.04)");
+    rg.addColorStop(1, "rgba(" + msTheme.rgb + ",0)");
+    ctx.fillStyle = rg; ctx.fillRect(0, 0, msW, msKbTop);
+    // side vignette so it doesn't read as a flat rectangle
+    const vg = ctx.createLinearGradient(0, 0, msW, 0);
+    vg.addColorStop(0, "rgba(9,10,12,.7)"); vg.addColorStop(0.1, "rgba(9,10,12,0)");
+    vg.addColorStop(0.9, "rgba(9,10,12,0)"); vg.addColorStop(1, "rgba(9,10,12,.7)");
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, msW, msKbTop);
+  }
+
+  function msDrawBar(k, y) {
+    const ctx = msCtx, hw = msKbTop;
+    const barH = Math.max(7, Math.min(20, (hw / MS_LOOKAHEAD) * 0.14));
+    const top = y - barH;
+    if (y < -barH || top > msKbTop) return;
+    const fade = Math.max(0.12, Math.min(1, y / (hw * 0.42)));   // fade the far (top) notes
+    const near = Math.max(0, Math.min(1, 1 - (msKbTop - y) / (hw * 0.5)));  // glow near hit line
+    const x = k.x + 1.2, w = Math.max(2, k.w - 2.4);
+    ctx.save();
+    ctx.globalAlpha = fade;
+    const g = ctx.createLinearGradient(0, top, 0, y);
+    g.addColorStop(0, "rgba(" + msTheme.rgb + "," + (k.white ? ".5" : ".42") + ")");
+    g.addColorStop(1, "rgba(" + msTheme.rgb + "," + (k.white ? ".95" : ".85") + ")");
+    ctx.fillStyle = g;
+    if (near > 0.05) { ctx.shadowColor = "rgba(" + msTheme.rgb + "," + (0.55 * near) + ")"; ctx.shadowBlur = 9 * near; }
+    msRoundRect(x, top, w, barH, 3); ctx.fill();
+    ctx.restore();
+  }
+
+  function msDrawKeyboard(t) {
+    const ctx = msCtx, kbTop = msKbTop, kbH = msKbH;
+    // stage light strip glowing down onto the keys
+    const strip = ctx.createLinearGradient(0, kbTop - 16, 0, kbTop);
+    strip.addColorStop(0, "rgba(" + msTheme.rgb + ",0)"); strip.addColorStop(1, "rgba(" + msTheme.rgb + ",.14)");
+    ctx.fillStyle = strip; ctx.fillRect(0, kbTop - 16, msW, 16);
+    // bright hit line
+    ctx.fillStyle = "rgba(" + msTheme.rgb + ",.55)"; ctx.fillRect(0, kbTop - 1.2, msW, 1.6);
+    // white keys (rounded bottoms, cached gradient)
+    for (const n in msKeyRect) {
+      const k = msKeyRect[n]; if (!k.white) continue;
+      ctx.fillStyle = (msFlash[n] || 0) > t ? msGWLit : msGW;
+      msRoundRectBottom(k.x + 0.5, kbTop, k.w - 1, kbH, 3); ctx.fill();
+    }
+    // depth shadow just under the hit line
+    const sh = ctx.createLinearGradient(0, kbTop, 0, kbTop + 9);
+    sh.addColorStop(0, "rgba(0,0,0,.28)"); sh.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = sh; ctx.fillRect(0, kbTop, msW, 9);
+    // black keys on top (rounded bottoms + top gloss)
+    for (const n in msKeyRect) {
+      const k = msKeyRect[n]; if (k.white) continue;
+      const lit = (msFlash[n] || 0) > t;
+      ctx.fillStyle = lit ? msGBLit : msGB;
+      msRoundRectBottom(k.x, kbTop, k.w, msBlackH, 2.4); ctx.fill();
+      if (!lit) { ctx.fillStyle = "rgba(255,255,255,.07)"; ctx.fillRect(k.x + 1, kbTop + 1.5, k.w - 2, 2); }
+    }
+    // bloom over the lit keys (drawn last so the glow spills over neighbours)
+    ctx.save();
+    for (const n in msKeyRect) {
+      const k = msKeyRect[n]; if (!((msFlash[n] || 0) > t)) continue;
+      ctx.shadowColor = "rgba(" + msTheme.rgb + ",.85)"; ctx.shadowBlur = 15;
+      ctx.fillStyle = "rgba(" + msTheme.rgb + ",.95)";
+      ctx.fillRect(k.x + 0.5, kbTop, Math.max(1, k.w - 1), 3.5);
+    }
+    ctx.restore();
+  }
+
+  function msDrawStatic() {
+    if (!msCtx || !msW) return;
+    msPaintBg();
+    msDrawKeyboard(performance.now());
+  }
+
+  function msFrame() {
+    if (!msView || !msPlaying) { msRaf = 0; msDrawStatic(); return; }
+    const t = performance.now();
+    msPlayhead = msBaseSec + ((t - msBaseWall) / 1000) * msSpeed;
+    msPaintBg();
+    if (msSteps.length) {
+      const pps = msKbTop / MS_LOOKAHEAD;
+      const lo = msPlayhead - 0.1, hi = msPlayhead + MS_LOOKAHEAD + 0.15;
+      for (let i = 0; i < msSteps.length; i++) {
+        const st = msSteps[i]; if (st.t < lo) continue; if (st.t > hi) break;
+        const y = msKbTop - (st.t - msPlayhead) * pps;
+        for (let j = 0; j < st.notes.length; j++) { const k = msKeyRect[st.notes[j].note]; if (k) msDrawBar(k, y); }
+      }
+      while (msFlashIx < msSteps.length && msSteps[msFlashIx].t <= msPlayhead) {
+        const ns = msSteps[msFlashIx].notes;
+        for (let j = 0; j < ns.length; j++) msFlash[ns[j].note] = t + 180;
+        msFlashIx++;
+      }
+    }
+    msDrawKeyboard(t);
+    msRaf = requestAnimationFrame(msFrame);
+  }
+
+  function msStartLoop() {
+    if (!msView || !msPlaying) return;
+    msBaseWall = performance.now();
+    if (!msRaf) msRaf = requestAnimationFrame(msFrame);
+  }
+  function msStopLoop() { if (msRaf) cancelAnimationFrame(msRaf); msRaf = 0; }
+
+  function msLoad(path) {
+    const a = api(); if (!a || !a.practiceLoad || !path) return;
+    if (path === msPath || path === msLoadingPath) return;
+    msLoadingPath = path;
+    a.practiceLoad(path).then((res) => {
+      msLoadingPath = null;
+      if (!res || !res.ok) { msSteps = []; msPath = null; return; }
+      msPath = path; msSteps = res.steps || []; msFlashIx = 0;
+      for (const k in msFlash) delete msFlash[k];
+      const em = $("#msEmpty"); if (em) em.hidden = msSteps.length > 0;
+      if (!msRaf) msDrawStatic();
+    }).catch(() => { msLoadingPath = null; });
+  }
+
+  function msSync(sec) {
+    if (!msInited) return;
+    msBaseSec = sec || 0; msBaseWall = performance.now();
+    while (msFlashIx > 0 && msSteps[msFlashIx - 1] && msSteps[msFlashIx - 1].t > msBaseSec + 0.05) msFlashIx--;
+  }
+
+  function msStateChanged() {
+    if (!msInited) return;
+    msPlaying = !!(state && state.isRunning && !state.paused);
+    msSpeed = (state && state.speed ? state.speed : 100) / 100;
+    const playing = state && state.isRunning && state.playingFile;
+    const card = $("#miniStage"); if (card) card.classList.toggle("live", msPlaying);
+    const em = $("#msEmpty");
+    if (playing) { if (state.playingFile !== msPath) msLoad(state.playingFile); if (em) em.hidden = true; }
+    else { if (em) em.hidden = false; }
+    if (msView) { if (msPlaying) msStartLoop(); else { msStopLoop(); msDrawStatic(); } }
+  }
+
+  function msEnter() {
+    msView = true;
+    msInit();
+    msResize();
+    msStateChanged();
+  }
+  function msLeave() { msView = false; msStopLoop(); }
+
+  // ---------- ACCENT COLOR (whole-app theme derived from one picked color) ----------
+  const AC_DEFAULT = "#c8ff4d";
+  function acHexToRgb(h) {
+    h = String(h || "").replace("#", "").trim();
+    if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+    if (!/^[0-9a-fA-F]{6}$/.test(h)) return null;
+    const n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function acRgbToHex(r, g, b) {
+    return "#" + [r, g, b].map((x) => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, "0")).join("");
+  }
+  function acMix(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
+  function acLum(rgb) {
+    const s = rgb.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    return 0.2126 * s[0] + 0.7152 * s[1] + 0.0722 * s[2];
+  }
+  // Derive the full token set (dim/lite/ink/rgb) from one accent, then push them
+  // as inline CSS vars on <body> so the entire app (and the canvas) recolors.
+  function applyAccent(hex) {
+    const rgb = acHexToRgb(hex) || acHexToRgb(AC_DEFAULT);
+    hex = acRgbToHex(rgb[0], rgb[1], rgb[2]);
+    const d = acMix(rgb, [0, 0, 0], 0.26), l = acMix(rgb, [255, 255, 255], 0.62);
+    const ink = acLum(rgb) > 0.5 ? "#0a0a0c" : "#f3f3f6";   // readable text on accent fills
+    const st = document.body.style;
+    st.setProperty("--accent", hex);
+    st.setProperty("--accent-dim", acRgbToHex(d[0], d[1], d[2]));
+    st.setProperty("--accent-lite", acRgbToHex(l[0], l[1], l[2]));
+    st.setProperty("--accent-ink", ink);
+    st.setProperty("--accent-rgb", rgb.join(","));
+    let matched = false;
+    $$("#swatchRow .swatch[data-color]").forEach((s) => {
+      const on = s.dataset.color.toLowerCase() === hex.toLowerCase();
+      s.classList.toggle("active", on); if (on) matched = true;
+    });
+    const cs = $("#customSwatch"); if (cs) cs.classList.toggle("active", !matched);
+    const ci = $("#customColor"); if (ci) ci.value = hex;   // keep the picker in sync with the live accent
+    const hx = $("#apHex"); if (hx) hx.textContent = hex.toUpperCase();
+    if (msInited) { msReadTheme(); if (msW) msLayout(); if (!msRaf) msDrawStatic(); }  // retheme the canvas
+  }
+  function setAccent(hex) {
+    applyAccent(hex);
+    const a = api(); if (a && a.setSkin) a.setSkin((document.body.style.getPropertyValue("--accent") || AC_DEFAULT).trim());
+  }
+
   let isFullscreen = false;
   function toggleFullscreen() {
     const a = api(); if (!a || !a.toggleFullscreen) return;
@@ -2320,6 +2903,9 @@
   // ---------- wire up ----------
   function bind() {
     $$(".nav").forEach((n) => n.addEventListener("click", () => switchView(n.dataset.view)));
+    $$("#swatchRow .swatch[data-color]").forEach((s) => s.addEventListener("click", () => setAccent(s.dataset.color)));
+    const cc = $("#customColor");
+    if (cc) { cc.addEventListener("input", () => applyAccent(cc.value)); cc.addEventListener("change", () => setAccent(cc.value)); }
 
     $$(".mode-opt").forEach((o) =>
       o.addEventListener("click", () => setMode(o.dataset.mode, true)));
@@ -2522,15 +3108,26 @@
       const tok = sp.closest(".sh-tok");
       if (tok && tok === shStepEls.get(shCurIdx)) sheetHitNote(note);
     });
-    $$("#shLevel .seg-opt").forEach((o) => o.addEventListener("click", () => {
-      if (o.dataset.shlevel === shLevel) return;
-      shLevel = o.dataset.shlevel;
-      $$("#shLevel .seg-opt").forEach((x) => x.classList.toggle("active", x === o));
-      const wasPlaying = shPlaying;
-      sheetStop();
-      sheetRender();
-      if (wasPlaying) sheetStart();
+    $$("#prArrange .seg-opt").forEach((o) => o.addEventListener("click", () => {
+      if (o.dataset.arr === prLevel || !prRawSteps.length) {
+        prLevel = o.dataset.arr;
+        $$("#prArrange .seg-opt").forEach((x) => x.classList.toggle("active", x === o));
+        return;
+      }
+      prLevel = o.dataset.arr;
+      $$("#prArrange .seg-opt").forEach((x) => x.classList.toggle("active", x === o));
+      reArrange();
     }));
+    // input source: QWERTY keyboard vs a real MIDI keyboard
+    $$("#prInput .seg-opt").forEach((o) => o.addEventListener("click", () => setPracticeInput(o.dataset.inp)));
+    $("#prMidiDev").addEventListener("change", (e) => {
+      const a = api(); if (a && a.practiceMidiStart && e.target.value) a.practiceMidiStart(e.target.value);
+    });
+    // detect MIDI keyboards being (un)plugged while the Practice tab is open
+    setInterval(() => {
+      const v = document.querySelector('.view[data-view="practice"]');
+      if (v && !v.hidden) refreshInputAvailability();
+    }, 4000);
     $("#shCopy").addEventListener("click", () => {
       if (!prSteps.length) return;
       const txt = sheetText();
@@ -2558,6 +3155,7 @@
       if (o.dataset.pmode === prMode) return;
       prMode = o.dataset.pmode;
       $$("#prModeSwitch .seg-opt").forEach((x) => x.classList.toggle("active", x === o));
+      updateArrangeVis();                // the Arrange control is hidden in Free play
       sheetStop();                       // leaving any mode: kill a running sheet
       $("#prSheet").hidden = true;        // hidden by default; enterSheet re-shows it
       if (prMode === "free") enterFree();
@@ -2728,12 +3326,17 @@
     $$(".hk-key").forEach((b) => b.addEventListener("click", () => startCapture(b)));
     document.addEventListener("keydown", (e) => {
       if (!capturing) return;
-      e.preventDefault();
-      const name = jsKeyToName(e);
-      const btn = capturing; capturing = null; btn.classList.remove("capturing");
-      if (name) api().setHotkey(btn.dataset.action, name).then((s) => applyHotkeys(s.hotkeys));
-      else applyHotkeys(inputStateHotkeysFallback());
-    });
+      // swallow the key completely so binding F11/Esc/etc. doesn't ALSO trigger
+      // their global handlers (fullscreen toggle, stage close, …) mid-capture
+      e.preventDefault(); e.stopImmediatePropagation();
+      finishCapture(jsKeyToName(e));
+    }, true);
+    // mouse side-buttons: browsers report Back = button 3 (M4), Forward = 4 (M5)
+    document.addEventListener("mousedown", (e) => {
+      if (!capturing) return;
+      if (e.button === 3) { e.preventDefault(); e.stopImmediatePropagation(); finishCapture("mouse:x1"); }
+      else if (e.button === 4) { e.preventDefault(); e.stopImmediatePropagation(); finishCapture("mouse:x2"); }
+    }, true);
   }
 
   function inputStateHotkeysFallback() {
@@ -2783,6 +3386,10 @@
     call("getState").then(() => {
       setMode(state && state.options && state.options.useMIDIOutput ? "midi" : "qwerty", false);
       hideSplash();   // always start on the Player (the home tab)
+      const a = api();
+      const boot = (val) => { applyAccent(val || AC_DEFAULT); msEnter(); };  // theme, then mini-stage
+      if (a && a.getSkin) a.getSkin().then(boot).catch(() => boot(AC_DEFAULT));
+      else boot(AC_DEFAULT);
     });
     setTimeout(hideSplash, 3000);
   }
