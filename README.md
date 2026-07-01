@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-1c1c23?style=flat-square" />
-  <img src="https://img.shields.io/badge/version-v1.3-c8ff4d?style=flat-square&labelColor=1c1c23" />
+  <img src="https://img.shields.io/badge/version-v1.4-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/license-GPL%20v3-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/made%20by-brenu-1c1c23?style=flat-square" />
 </p>
@@ -34,12 +34,14 @@
 > - **Still blocked?** → right-click the `.zip` → **Properties** → tick **Unblock** → extract again.
 > - Peace of mind: **Velo is fully open-source (GPL v3)** — you can read every line right here in this repo, or build the `.exe` yourself.
 
-## 🆕 What's new in v1.3
+## 🆕 What's new in v1.4
 
-- 🎹 **Sheet mode** — a brand-new way to practice, in the spirit of Virtual Piano. Velo writes any MIDI out as a readable stream of keyboard letters (`[er] t | y u`) and you **play it yourself**: type the highlighted keys and it advances, click a letter to hear it, or hit **Listen** to watch it play. Sharps glow blue (hold Shift), chords sit in `[ ]`, phrases split on `|`.
-- 🧩 **Auto-playable chords** — many MIDIs stack notes that no hand could press at once. The **Playability** switch (`Faithful · Balanced · Easy`) trims oversized chords down to the bass + melody and drops same-key collisions, so any song becomes playable — then **Copy** the sheet to share it.
-- 🔊 **Hear your mistakes** — in Step mode, a wrong key now sounds the note you actually pressed (Rhythm already did), so you catch slips by ear, not just by colour.
-- 🔁 **Clearer "Loop a section"** — the section trainer's two sliders are now one range with draggable handles and the looped part highlighted, so it's obvious what you're drilling.
+- 🎬 **Live mini-stage in the Player** — a compact falling-notes visualizer right under the transport, so you can watch a song play without opening the full Stage.
+- 🎨 **Custom theme colors** — pick any accent color (presets + a full color picker in **Settings › Appearance**) and the whole app recolors instantly.
+- 🎹 **MIDI keyboard support in Practice** — plug in a real MIDI keyboard and practice by actually playing, note for note.
+- ⌨️🖱️ **Upgraded hotkeys** — bind mouse side-buttons (M4/M5) and symbol keys, or unbind any hotkey to **None**.
+- 🔊 **Cleaner sound** — fixed the buzzy/distorted output on dense chords; the piano stays loud but clean.
+- ✨ **Stability** — fixed duplicate window buttons in Stage, kept maximize/restore on-screen, and hardened MIDI input.
 
 ## 📸 Screenshots
 
