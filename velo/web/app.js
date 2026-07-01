@@ -2607,6 +2607,9 @@
   let msFlashIx = 0, msRaf = 0;
   let msKbH = 0, msBlackH = 0;                          // keyboard geometry (per layout)
   let msGW = null, msGWLit = null, msGB = null, msGBLit = null;  // cached key gradients
+  let msGBg = null, msGGlow = null, msGVig = null, msGStrip = null, msGShadow = null;  // cached bg/keyboard gradients
+  let msBarH = 12;                                               // cached falling-bar height
+  let msColHit = "", msColBarW = "", msColBarB = "", msColBloom = "", msColBloomSh = "";  // pre-built color strings
   const msTheme = { accent: "#c8ff4d", dim: "#9fd62f", lite: "#eaffb0", rgb: "200,255,77" };
 
   function msReadTheme() {
@@ -2684,6 +2687,26 @@
       msGB.addColorStop(0, "#34343e"); msGB.addColorStop(0.5, "#1c1c22"); msGB.addColorStop(1, "#0c0c10");
       msGBLit = msCtx.createLinearGradient(0, msKbTop, 0, msKbTop + msBlackH);
       msGBLit.addColorStop(0, msTheme.accent); msGBLit.addColorStop(1, msTheme.dim);
+      // background + keyboard gradients — also frame-independent, so build once
+      // here instead of allocating them every frame (that garbage was causing the
+      // periodic GC pauses / "mini freezes").
+      msGBg = msCtx.createLinearGradient(0, 0, 0, msH);
+      msGBg.addColorStop(0, "#090a0c"); msGBg.addColorStop(0.72, "#0b0c10"); msGBg.addColorStop(1, "#0e0f15");
+      msGGlow = msCtx.createRadialGradient(msW / 2, msKbTop, 0, msW / 2, msKbTop, Math.max(msW * 0.4, 240));
+      msGGlow.addColorStop(0, "rgba(" + msTheme.rgb + ",.13)"); msGGlow.addColorStop(0.55, "rgba(" + msTheme.rgb + ",.04)"); msGGlow.addColorStop(1, "rgba(" + msTheme.rgb + ",0)");
+      msGVig = msCtx.createLinearGradient(0, 0, msW, 0);
+      msGVig.addColorStop(0, "rgba(9,10,12,.7)"); msGVig.addColorStop(0.1, "rgba(9,10,12,0)"); msGVig.addColorStop(0.9, "rgba(9,10,12,0)"); msGVig.addColorStop(1, "rgba(9,10,12,.7)");
+      msGStrip = msCtx.createLinearGradient(0, msKbTop - 16, 0, msKbTop);
+      msGStrip.addColorStop(0, "rgba(" + msTheme.rgb + ",0)"); msGStrip.addColorStop(1, "rgba(" + msTheme.rgb + ",.14)");
+      msGShadow = msCtx.createLinearGradient(0, msKbTop, 0, msKbTop + 9);
+      msGShadow.addColorStop(0, "rgba(0,0,0,.28)"); msGShadow.addColorStop(1, "rgba(0,0,0,0)");
+      // pre-build the per-frame color strings once (no concatenation in the loop)
+      msColHit = "rgba(" + msTheme.rgb + ",.55)";
+      msColBarW = "rgba(" + msTheme.rgb + ",.92)";
+      msColBarB = "rgba(" + msTheme.rgb + ",.8)";
+      msColBloom = "rgba(" + msTheme.rgb + ",.95)";
+      msColBloomSh = "rgba(" + msTheme.rgb + ",.85)";
+      msBarH = Math.max(7, Math.min(20, (msKbTop / MS_LOOKAHEAD) * 0.14));
     }
   }
 
@@ -2701,60 +2724,33 @@
   function msPaintBg() {
     const ctx = msCtx;
     ctx.clearRect(0, 0, msW, msH);
-    // deep base
-    let bg = ctx.createLinearGradient(0, 0, 0, msH);
-    bg.addColorStop(0, "#090a0c"); bg.addColorStop(0.72, "#0b0c10"); bg.addColorStop(1, "#0e0f15");
-    ctx.fillStyle = bg; ctx.fillRect(0, 0, msW, msH);
-    // ambient lime glow rising from behind the keyboard — gives the highway life
-    const rg = ctx.createRadialGradient(msW / 2, msKbTop, 0, msW / 2, msKbTop, Math.max(msW * 0.4, 240));
-    rg.addColorStop(0, "rgba(" + msTheme.rgb + ",.13)");
-    rg.addColorStop(0.55, "rgba(" + msTheme.rgb + ",.04)");
-    rg.addColorStop(1, "rgba(" + msTheme.rgb + ",0)");
-    ctx.fillStyle = rg; ctx.fillRect(0, 0, msW, msKbTop);
-    // side vignette so it doesn't read as a flat rectangle
-    const vg = ctx.createLinearGradient(0, 0, msW, 0);
-    vg.addColorStop(0, "rgba(9,10,12,.7)"); vg.addColorStop(0.1, "rgba(9,10,12,0)");
-    vg.addColorStop(0.9, "rgba(9,10,12,0)"); vg.addColorStop(1, "rgba(9,10,12,.7)");
-    ctx.fillStyle = vg; ctx.fillRect(0, 0, msW, msKbTop);
+    ctx.fillStyle = msGBg; ctx.fillRect(0, 0, msW, msH);            // deep base (cached)
+    ctx.fillStyle = msGGlow; ctx.fillRect(0, 0, msW, msKbTop);      // ambient glow (cached)
+    ctx.fillStyle = msGVig; ctx.fillRect(0, 0, msW, msKbTop);       // side vignette (cached)
   }
 
   function msDrawBar(k, y) {
-    const ctx = msCtx, hw = msKbTop;
-    const barH = Math.max(7, Math.min(20, (hw / MS_LOOKAHEAD) * 0.14));
-    const top = y - barH;
-    if (y < -barH || top > msKbTop) return;
-    const fade = Math.max(0.12, Math.min(1, y / (hw * 0.42)));   // fade the far (top) notes
-    const near = Math.max(0, Math.min(1, 1 - (msKbTop - y) / (hw * 0.5)));  // glow near hit line
-    const x = k.x + 1.2, w = Math.max(2, k.w - 2.4);
-    ctx.save();
-    ctx.globalAlpha = fade;
-    const g = ctx.createLinearGradient(0, top, 0, y);
-    g.addColorStop(0, "rgba(" + msTheme.rgb + "," + (k.white ? ".5" : ".42") + ")");
-    g.addColorStop(1, "rgba(" + msTheme.rgb + "," + (k.white ? ".95" : ".85") + ")");
-    ctx.fillStyle = g;
-    if (near > 0.05) { ctx.shadowColor = "rgba(" + msTheme.rgb + "," + (0.55 * near) + ")"; ctx.shadowBlur = 9 * near; }
-    msRoundRect(x, top, w, barH, 3); ctx.fill();
-    ctx.restore();
+    const top = y - msBarH;
+    if (y < -msBarH || top > msKbTop) return;
+    const ctx = msCtx;
+    // solid fill + alpha fade (no per-bar gradient / shadow → no per-frame garbage)
+    ctx.globalAlpha = Math.max(0.14, Math.min(1, y / (msKbTop * 0.42)));
+    ctx.fillStyle = k.white ? msColBarW : msColBarB;
+    msRoundRect(k.x + 1.2, top, Math.max(2, k.w - 2.4), msBarH, 3); ctx.fill();
+    ctx.globalAlpha = 1;
   }
 
   function msDrawKeyboard(t) {
     const ctx = msCtx, kbTop = msKbTop, kbH = msKbH;
-    // stage light strip glowing down onto the keys
-    const strip = ctx.createLinearGradient(0, kbTop - 16, 0, kbTop);
-    strip.addColorStop(0, "rgba(" + msTheme.rgb + ",0)"); strip.addColorStop(1, "rgba(" + msTheme.rgb + ",.14)");
-    ctx.fillStyle = strip; ctx.fillRect(0, kbTop - 16, msW, 16);
-    // bright hit line
-    ctx.fillStyle = "rgba(" + msTheme.rgb + ",.55)"; ctx.fillRect(0, kbTop - 1.2, msW, 1.6);
+    ctx.fillStyle = msGStrip; ctx.fillRect(0, kbTop - 16, msW, 16);        // stage light (cached)
+    ctx.fillStyle = msColHit; ctx.fillRect(0, kbTop - 1.2, msW, 1.6);      // hit line
     // white keys (rounded bottoms, cached gradient)
     for (const n in msKeyRect) {
       const k = msKeyRect[n]; if (!k.white) continue;
       ctx.fillStyle = (msFlash[n] || 0) > t ? msGWLit : msGW;
       msRoundRectBottom(k.x + 0.5, kbTop, k.w - 1, kbH, 3); ctx.fill();
     }
-    // depth shadow just under the hit line
-    const sh = ctx.createLinearGradient(0, kbTop, 0, kbTop + 9);
-    sh.addColorStop(0, "rgba(0,0,0,.28)"); sh.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = sh; ctx.fillRect(0, kbTop, msW, 9);
+    ctx.fillStyle = msGShadow; ctx.fillRect(0, kbTop, msW, 9);             // depth shadow (cached)
     // black keys on top (rounded bottoms + top gloss)
     for (const n in msKeyRect) {
       const k = msKeyRect[n]; if (k.white) continue;
@@ -2763,15 +2759,18 @@
       msRoundRectBottom(k.x, kbTop, k.w, msBlackH, 2.4); ctx.fill();
       if (!lit) { ctx.fillStyle = "rgba(255,255,255,.07)"; ctx.fillRect(k.x + 1, kbTop + 1.5, k.w - 2, 2); }
     }
-    // bloom over the lit keys (drawn last so the glow spills over neighbours)
-    ctx.save();
-    for (const n in msKeyRect) {
-      const k = msKeyRect[n]; if (!((msFlash[n] || 0) > t)) continue;
-      ctx.shadowColor = "rgba(" + msTheme.rgb + ",.85)"; ctx.shadowBlur = 15;
-      ctx.fillStyle = "rgba(" + msTheme.rgb + ",.95)";
-      ctx.fillRect(k.x + 0.5, kbTop, Math.max(1, k.w - 1), 3.5);
+    // bloom over the lit keys — set the (expensive) shadow ONCE, only if any key is lit
+    let anyLit = false;
+    for (const n in msKeyRect) { if ((msFlash[n] || 0) > t) { anyLit = true; break; } }
+    if (anyLit) {
+      ctx.save();
+      ctx.shadowColor = msColBloomSh; ctx.shadowBlur = 14; ctx.fillStyle = msColBloom;
+      for (const n in msKeyRect) {
+        const k = msKeyRect[n]; if (!((msFlash[n] || 0) > t)) continue;
+        ctx.fillRect(k.x + 0.5, kbTop, Math.max(1, k.w - 1), 3.5);
+      }
+      ctx.restore();
     }
-    ctx.restore();
   }
 
   function msDrawStatic() {
