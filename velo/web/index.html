@@ -25,6 +25,7 @@
         <span class="brand-name">Velo</span>
       </div>
       <div class="win-controls">
+        <button class="win-btn bell" id="winBell" aria-label="Floating mini-player" title="Floating mini-player — a now-playing bar on top of your game (green = on)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a2 2 0 0 0 3.4 0"/></svg></button>
         <button class="win-btn pin" id="winPin" aria-label="Always on top" title="Stay on top of other apps (e.g. Roblox)"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l-1 6 3 3H7l3-3-1-6z"/><path d="M12 16v4"/></svg></button>
         <button class="win-btn" id="winMin" aria-label="Minimize"><svg viewBox="0 0 12 12" width="11" height="11"><line x1="2" y1="6" x2="10" y2="6" stroke="currentColor" stroke-width="1.4"/></svg></button>
         <button class="win-btn" id="winMax" aria-label="Maximize"><svg viewBox="0 0 12 12" width="11" height="11"><rect x="2.5" y="2.5" width="7" height="7" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>
@@ -69,7 +70,7 @@
           <span class="nav-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.5M12 18.5V21M21 12h-2.5M5.5 12H3M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8M18.4 18.4l-1.8-1.8M7.4 7.4 5.6 5.6"/></svg></span>
           <span class="nav-label">Settings</span>
         </button>
-        <div class="rail-foot">Velo<span>v1.5</span></div>
+        <div class="rail-foot">Velo<span>v1.6</span></div>
       </nav>
 
       <main class="content">
@@ -154,7 +155,13 @@
 
           <div class="grid-2">
             <div class="card options reveal" style="--d:2">
-              <div class="card-title">Options</div>
+              <div class="card-title">Options
+                <div class="seg opt-arrange-seg" id="playArrange" title="How the autoplayer performs the song — same idea as Practice's Arrange. It never changes which keys are pressed.">
+                  <button class="seg-opt active" data-arr="faith" title="Every note, exactly as written — full chords.">Faithful</button>
+                  <button class="seg-opt" data-arr="bal" title="Lighter: keeps the bass + melody and thins dense chords, so it looks less like an autoplayer.">Balanced</button>
+                  <button class="seg-opt" data-arr="easy" title="Melody only — just the top line.">Easy</button>
+                </div>
+              </div>
               <div class="chips" id="chips">
                 <button class="chip" data-opt="sustain">Sustain</button>
                 <button class="chip" data-opt="noDoubles">No doubles</button>
@@ -506,6 +513,8 @@
               <div class="hk-row"><span class="hk-label"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 5l-7 7 7 7M12 5l-7 7 7 7"/></svg> Slow down</span><button class="hk-key" data-action="slowdown">F5</button></div>
               <div class="hk-row"><span class="hk-label"><svg viewBox="0 0 24 24" width="16" height="16"><rect x="5" y="6" width="2.4" height="12" rx="1.2" fill="currentColor"/><path d="M18 6 9 12l9 6Z" fill="currentColor"/></svg> Previous track</span><button class="hk-key" data-action="prevtrack">F6</button></div>
               <div class="hk-row"><span class="hk-label"><svg viewBox="0 0 24 24" width="16" height="16"><rect x="16.6" y="6" width="2.4" height="12" rx="1.2" fill="currentColor"/><path d="M6 6l9 6-9 6Z" fill="currentColor"/></svg> Next track</span><button class="hk-key" data-action="nexttrack">F7</button></div>
+              <div class="hk-row"><span class="hk-label"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg> Cycle play style</span><button class="hk-key" data-action="cyclestyle">F8</button></div>
+              <div class="hk-row"><span class="hk-label"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a2 2 0 0 0 3.4 0"/></svg> Toggle mini-player</span><button class="hk-key" data-action="overlay">F9</button></div>
             </div>
             <div class="hk-hint">Click a slot, then press any key — a letter, symbol, or a mouse side-button (M4/M5). Press <b>Delete</b> to unbind it (None), or <b>Esc</b> to cancel. Hotkeys work even when Velo is in the background.</div>
           </div>
@@ -588,7 +597,7 @@
             <div class="about-row">
               <span class="about-mark"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M5 19V5l8 4-8 4" fill="currentColor"/><path d="M14 5v14M19 5v14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span>
               <div>
-                <div class="about-name">Velo <span class="about-ver">v1.5</span></div>
+                <div class="about-name">Velo <span class="about-ver">v1.6</span></div>
                 <div class="about-sub">MIDI player — QWERTY &amp; MIDI output</div>
               </div>
             </div>

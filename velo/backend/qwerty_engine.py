@@ -10,6 +10,9 @@ import mido
 import threading
 import time
 import random
+from collections import defaultdict, deque
+
+_EMPTY = frozenset()
 
 # `keyboard` is an optional input backend (inputModule == "keyboard"); the
 # default is pynput. On Linux `keyboard` needs root, so guard the import.
@@ -21,6 +24,7 @@ except Exception:
 from pynput import keyboard as pynputKeyboard
 from velo.backend import config as configuration
 from velo.backend import humanize
+from velo.backend import arrange
 
 pressedKeys = set()
 heldKeys = set()
@@ -243,13 +247,18 @@ def parseMidi(message):
 def playMidiOnce(midiFile, startOffset=0.0):
     global sustainActive, paused
     mid = mido.MidiFile(midiFile, clip=True)
+    # materialize once so the play-style arranger can decide which notes to drop
+    # (Balanced/Easy); faith gives an empty set, so it's a true no-op.
+    messages = list(mid)
+    onSupp = arrange.on_suppress_sets(messages)   # per-style note_on drop sets
+    stylePending = defaultdict(deque)             # per pitch: was each sounding note dropped?
     startTime = time.monotonic() - (startOffset / (playbackSpeed if playbackSpeed else 1.0))
     currentTime = 0
     songPos = 0.0
     wasPaused = False
     humanizer = humanize.Humanizer()
 
-    for msg in mid:
+    for idx, msg in enumerate(messages):
         if stopEvent.is_set() or closeThread:
             return False
 
@@ -310,6 +319,18 @@ def playMidiOnce(midiFile, startOffset=0.0):
                 else:
                     sustainActive = False
             continue
+
+        # play style (live): decide per note whether to drop it, pairing each
+        # note_off with its note_on so switching style mid-song never sticks a key
+        if msg.type == "note_on" and msg.velocity > 0:
+            dropped = idx in onSupp.get(configuration.configData["midiPlayer"].get("arrangeMode", "faith"), _EMPTY)
+            stylePending[msg.note].append(dropped)
+            if dropped:
+                continue
+        elif msg.type == "note_off" or (msg.type == "note_on" and msg.velocity == 0):
+            q = stylePending.get(msg.note)
+            if q and q.popleft():
+                continue
 
         if hasattr(msg, "note"):
             if msg.type == "note_on" and msg.velocity > 0:

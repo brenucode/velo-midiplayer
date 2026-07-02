@@ -17,7 +17,7 @@ from velo.backend import platcompat
 APP_NAME = "Velo"
 # Single source of truth for the running version (keep in sync with version.txt).
 # The updater compares this against the latest GitHub release tag.
-APP_VERSION = "1.5"
+APP_VERSION = "1.6"
 
 # Floor so a tap is always long enough for the game to register the key press.
 SHORT_NOTES_FLOOR_MS = 30

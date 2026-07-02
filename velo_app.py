@@ -21,7 +21,9 @@ managers live in module globals and the Api methods reach them from there.
 import os
 import sys
 import json
+import time
 import base64
+import ctypes
 import logging
 import threading
 import socket
@@ -102,6 +104,12 @@ logger = logging.getLogger("velo")
 
 # ---- module-level state (kept OUT of the js_api object on purpose) ----------
 WINDOW = None
+OVERLAY = None            # the floating mini-player window (2nd window)
+OVERLAY_READY = False     # True once its DOM has loaded (safe to evaluate_js)
+OVERLAY_VISIBLE = False   # True while it's shown on screen
+OVERLAY_GEOM = {}         # last known {x,y} of the overlay (persisted on close)
+_OVERLAY_WNDPROC = None    # keep the WM_MOUSEACTIVATE hook callback alive (GC guard)
+_OVERLAY_OLDPROC = None    # original child WNDPROC (to chain via CallWindowProc)
 PLAYER = None
 DRUMS = None
 INPUT = None
@@ -151,12 +159,199 @@ def _onScreen(x, y, w, h):
 def emit(event, payload):
     if SHUTTING_DOWN:
         return
-    w = WINDOW
-    if w is None:
+    code = ("window.veloEvent && window.veloEvent(%s, %s)"
+            % (json.dumps(event), json.dumps(payload)))
+    # main window
+    if WINDOW is not None:
+        try:
+            WINDOW.evaluate_js(code)
+        except Exception:
+            pass
+    # floating mini-player (only when it's loaded AND currently shown, so we
+    # never evaluate_js into a mid-navigation / hidden overlay → native crash)
+    if OVERLAY is not None and OVERLAY_READY and OVERLAY_VISIBLE:
+        try:
+            OVERLAY.evaluate_js(code)
+        except Exception:
+            pass
+
+
+# ---------------------------------------------------------------------------
+# Floating mini-player (overlay) — native window plumbing.
+#
+# Everything that pokes the native window runs on the WinForms UI thread via
+# BeginInvoke (same pattern as Api.setOnTop / Api.startResize). We deliberately
+# bypass pywebview's own show()/hide()/move()/resize() for the overlay: those
+# activate the window (Show()+Activate()+webview.Focus()), which would yank the
+# user out of their game. We drive Win32 directly with SWP_NOACTIVATE, so the
+# pill can be shown/moved/resized/clicked while the game keeps input focus.
+# ---------------------------------------------------------------------------
+_GWL_EXSTYLE = -20
+_WS_EX_TOOLWINDOW = 0x00000080
+_WS_EX_NOACTIVATE = 0x08000000
+_WS_EX_LAYERED = 0x00080000
+_LWA_ALPHA = 0x02
+_HWND_TOPMOST = -1
+_SWP_NOSIZE = 0x0001
+_SWP_NOMOVE = 0x0002
+_SWP_NOZORDER = 0x0004
+_SWP_NOACTIVATE = 0x0010
+_SW_HIDE = 0
+_SW_SHOWNOACTIVATE = 4
+
+
+def _overlayHwnd():
+    try:
+        return int(OVERLAY.native.Handle.ToInt64())
+    except Exception:
+        return None
+
+
+def _overlayScale(hwnd):
+    """Physical-per-CSS pixel ratio for this window (DPI aware)."""
+    try:
+        dpi = ctypes.windll.user32.GetDpiForWindow(hwnd)
+        if dpi:
+            return dpi / 96.0
+    except Exception:
+        pass
+    return 1.0
+
+
+def _overlayInvoke(fn):
+    """Run fn() on the WinForms UI thread — native window ops must live there."""
+    try:
+        from System import Action
+        OVERLAY.native.BeginInvoke(Action(fn))
+        return
+    except Exception:
+        try:
+            fn()
+        except Exception:
+            pass
+
+
+def _overlayPinTopmost(hwnd):
+    try:
+        ctypes.windll.user32.SetWindowPos(
+            hwnd, _HWND_TOPMOST, 0, 0, 0, 0,
+            _SWP_NOMOVE | _SWP_NOSIZE | _SWP_NOACTIVATE)
+    except Exception:
+        pass
+
+
+def _overlayApplyStyles():
+    """UI thread: keep it off the taskbar/alt-tab (TOOLWINDOW), non-activating
+    (NOACTIVATE — pywebview already set it via focus=False, we re-assert), and
+    pinned above everything (incl. borderless Roblox)."""
+    hwnd = _overlayHwnd()
+    if not hwnd:
         return
     try:
-        w.evaluate_js("window.veloEvent && window.veloEvent(%s, %s)"
-                      % (json.dumps(event), json.dumps(payload)))
+        u = ctypes.windll.user32
+        ex = u.GetWindowLongW(hwnd, _GWL_EXSTYLE)
+        u.SetWindowLongW(hwnd, _GWL_EXSTYLE, ex | _WS_EX_TOOLWINDOW | _WS_EX_NOACTIVATE | _WS_EX_LAYERED)
+    except Exception:
+        pass
+    _overlayPinTopmost(hwnd)
+
+
+def _overlayRound(hwnd):
+    """Clip the (opaque) window to a rounded rect so it reads as a floating pill.
+    Region is in window pixels, so it must be re-applied whenever the size
+    changes. The window takes ownership of the region handle."""
+    try:
+        u = ctypes.windll.user32
+        g = ctypes.windll.gdi32
+
+        class _R(ctypes.Structure):
+            _fields_ = [("l", ctypes.c_long), ("t", ctypes.c_long),
+                        ("r", ctypes.c_long), ("b", ctypes.c_long)]
+        rc = _R()
+        u.GetWindowRect(hwnd, ctypes.byref(rc))
+        w, h = rc.r - rc.l, rc.b - rc.t
+        if w <= 0 or h <= 0:
+            return
+        rad = int(round(19 * _overlayScale(hwnd)))
+        rgn = g.CreateRoundRectRgn(0, 0, w + 1, h + 1, rad * 2, rad * 2)
+        u.SetWindowRgn(hwnd, rgn, True)
+    except Exception:
+        pass
+
+
+def _overlaySetAlpha(hwnd, a):
+    try:
+        ctypes.windll.user32.SetLayeredWindowAttributes(hwnd, 0, int(max(0, min(255, a))), _LWA_ALPHA)
+    except Exception:
+        pass
+
+
+def _overlayShow(show):
+    """UI thread: show without activating (keeps game focus) / hide. Also
+    re-asserts topmost + rounded corners on show. On show it starts fully
+    transparent (alpha 0) so the fade-in can raise it — nothing pops in."""
+    global OVERLAY_VISIBLE
+    hwnd = _overlayHwnd()
+    if not hwnd:
+        return
+    if show:
+        _overlayApplyStyles()            # adds WS_EX_LAYERED (needed for alpha)
+        _overlaySetAlpha(hwnd, 0)        # invisible first; fade-in ramps it up
+        try:
+            ctypes.windll.user32.ShowWindow(hwnd, _SW_SHOWNOACTIVATE)
+        except Exception:
+            pass
+        _overlayRound(hwnd)
+        OVERLAY_VISIBLE = True
+    else:
+        try:
+            ctypes.windll.user32.ShowWindow(hwnd, _SW_HIDE)
+        except Exception:
+            pass
+        OVERLAY_VISIBLE = False
+
+
+def _overlayAnim(fade_in):
+    """Fade the WHOLE window (background + content) via layered-window alpha, so
+    it never pops. On fade-out, hide the native window once fully faded."""
+    hwnd = _overlayHwnd()
+    if not hwnd:
+        return
+    steps, dur = 14, 0.17
+    for i in range(steps + 1):
+        frac = i / steps
+        _overlaySetAlpha(hwnd, 255 * (frac if fade_in else (1 - frac)))
+        time.sleep(dur / steps)
+    if not fade_in:
+        _overlayInvoke(lambda: _overlayShow(False))
+
+
+def _overlayMoveTo(x_css, y_css):
+    """UI thread: move top-left to a CSS-pixel screen coord (converted to
+    physical), without activating."""
+    hwnd = _overlayHwnd()
+    if not hwnd:
+        return
+    s = _overlayScale(hwnd)
+    try:
+        ctypes.windll.user32.SetWindowPos(
+            hwnd, 0, int(round(x_css * s)), int(round(y_css * s)), 0, 0,
+            _SWP_NOSIZE | _SWP_NOZORDER | _SWP_NOACTIVATE)
+    except Exception:
+        pass
+
+
+def _overlayResize(w_css, h_css):
+    """UI thread: resize (CSS px → physical) without moving or activating."""
+    hwnd = _overlayHwnd()
+    if not hwnd:
+        return
+    s = _overlayScale(hwnd)
+    try:
+        ctypes.windll.user32.SetWindowPos(
+            hwnd, 0, 0, 0, int(round(w_css * s)), int(round(h_css * s)),
+            _SWP_NOMOVE | _SWP_NOZORDER | _SWP_NOACTIVATE)
+        _overlayRound(hwnd)          # re-clip: region depends on the new size
     except Exception:
         pass
 
@@ -255,6 +450,71 @@ class Api:
 
     def setShortNotes(self, patch):
         return PLAYER.setShortNotes(patch)
+
+    def setArrangeMode(self, mode):
+        return PLAYER.setArrangeMode(mode)
+
+    def cyclePlayStyle(self):
+        return PLAYER.cycleArrangeMode()
+
+    # ----- floating mini-player (overlay) -----------------------------------
+    def overlaySetEnabled(self, value):
+        value = bool(value)
+        configuration.configData.setdefault("overlay", {})["enabled"] = value
+        configuration.save()
+
+        # NOTE: evaluate_js MUST run off the WinForms UI thread (on it → WebView2
+        # deadlock / "not responding"). So native show/hide goes through
+        # _overlayInvoke (UI thread), and the fade + state push run on a Timer.
+        if value:
+            _overlayInvoke(lambda: _overlayShow(True))    # native show at alpha 0
+            threading.Timer(0.04, lambda: threading.Thread(
+                target=lambda: _overlayAnim(True), daemon=True).start()).start()  # fade in
+            def _push():
+                try:
+                    if PLAYER:
+                        PLAYER._emitState()
+                        PLAYER.pushTimeline()
+                except Exception:
+                    pass
+            threading.Timer(0.06, _push).start()
+        else:
+            threading.Thread(target=lambda: _overlayAnim(False), daemon=True).start()  # fade out, then hide
+        if PLAYER:
+            PLAYER._emitState()                  # reflect the toggle in the main window
+            return PLAYER.getState()
+        return {}
+
+    def overlayClose(self):
+        """The pill's ✕ — hide it and flip the Settings toggle off. NEVER closes
+        the window (closing any window calls Application.Exit → kills the app)."""
+        return self.overlaySetEnabled(False)
+
+    def overlaySetScale(self, value):
+        try:
+            s = max(0.7, min(1.6, float(value)))
+        except (TypeError, ValueError):
+            return PLAYER.getState() if PLAYER else {}
+        configuration.configData.setdefault("overlay", {})["scale"] = round(s, 3)
+        configuration.save()
+        if PLAYER:
+            PLAYER._emitState()                  # overlay.js re-syncs its size from scale
+            return PLAYER.getState()
+        return {}
+
+    def overlayMoveTo(self, x, y):
+        try:
+            x, y = float(x), float(y)
+        except (TypeError, ValueError):
+            return
+        _overlayInvoke(lambda: _overlayMoveTo(x, y))
+
+    def overlayResize(self, w, h):
+        try:
+            w, h = int(float(w)), int(float(h))
+        except (TypeError, ValueError):
+            return
+        _overlayInvoke(lambda: _overlayResize(w, h))
 
     def setSound(self, key, value):
         return PLAYER.setSound(key, value)
@@ -710,7 +970,7 @@ def _notifyAlreadyRunning():
 
 
 def main():
-    global WINDOW, PLAYER, DRUMS, INPUT
+    global WINDOW, OVERLAY, OVERLAY_READY, PLAYER, DRUMS, INPUT
 
     # single-instance guard — a second Velo would double every note. If one is
     # already up, focus it and quit before doing any work.
@@ -727,6 +987,7 @@ def main():
     audioname.setAppId("brenu.Velo.MidiPlayer")
 
     indexPath = resourcePath(os.path.join("velo", "web", "index.html"))
+    overlayPath = resourcePath(os.path.join("velo", "web", "overlay.html"))
 
     ui = configuration.configData.get("appUI", {})
     saved = ui.get("window", {}) or {}
@@ -759,6 +1020,77 @@ def main():
     PLAYER = Player(emit=emit)
     DRUMS = DrumsPlayer(emit=emit)
     INPUT = InputController(emit=emit)
+
+    # ----- floating mini-player (2nd window) --------------------------------
+    # OPAQUE dark window (NOT transparent): WebView2 per-pixel transparency is
+    # unreliable here — it rendered the pill as opaque grey AND corrupted the
+    # main window's compositor (shared process). Instead we make it a solid dark
+    # window and round its corners with a Win32 region (SetWindowRgn), so it
+    # still reads as a floating pill. focus=False → pywebview adds
+    # WS_EX_NOACTIVATE; we show/hide with Win32 SW_SHOWNOACTIVATE/SW_HIDE
+    # (never pywebview show()/hide(), which steal focus from the game).
+    ovCfg = configuration.configData.get("overlay", {}) or {}
+    try:
+        ovScale = float(ovCfg.get("scale", 1.0) or 1.0)
+    except (TypeError, ValueError):
+        ovScale = 1.0
+    overlay = webview.create_window(
+        "VeloOverlay",
+        url=overlayPath,
+        js_api=api,
+        width=int(round(372 * ovScale)),
+        height=int(round(118 * ovScale)),
+        min_size=(160, 60),        # allow the small pill (pywebview defaults ~200x100)
+        frameless=True,
+        easy_drag=False,
+        on_top=True,
+        focus=False,
+        resizable=False,
+        background_color="#0d0d12",   # opaque dark; the native region rounds it
+    )
+    OVERLAY = overlay
+
+    def onOverlayLoaded():
+        global OVERLAY_READY
+        OVERLAY_READY = True
+        ovc = configuration.configData.get("overlay", {}) or {}
+        enabled = bool(ovc.get("enabled", False))
+        sx, sy = ovc.get("x"), ovc.get("y")
+
+        def _init():
+            _overlayApplyStyles()
+            if isinstance(sx, (int, float)) and isinstance(sy, (int, float)):
+                _overlayMoveTo(sx, sy)
+            _overlayShow(enabled)
+        _overlayInvoke(_init)
+        if enabled:                          # fade the pill in, then hand it the
+            threading.Timer(0.12, lambda: threading.Thread(   # current song/time
+                target=lambda: _overlayAnim(True), daemon=True).start()).start()
+            def _push():
+                try:
+                    if PLAYER:
+                        PLAYER._emitState()
+                        PLAYER.pushTimeline()
+                except Exception:
+                    pass
+            threading.Timer(0.20, _push).start()
+
+    def onOverlayMoved(x, y):
+        try:
+            x, y = int(x), int(y)
+            if x > -10000 and y > -10000:   # ignore the minimize sentinel
+                OVERLAY_GEOM["x"], OVERLAY_GEOM["y"] = x, y
+        except Exception:
+            pass
+
+    overlay.events.loaded += onOverlayLoaded
+    overlay.events.moved += onOverlayMoved
+
+    # global hotkey (default F9) flips the mini-player on/off
+    def _toggleOverlay():
+        cur = bool(configuration.configData.get("overlay", {}).get("enabled", False))
+        api.overlaySetEnabled(not cur)
+    PLAYER.onOverlayToggle = _toggleOverlay
 
     def onResized(w, h):
         if FULLSCREEN:
@@ -823,6 +1155,11 @@ def main():
                                               GEOM.get("w", 0), GEOM.get("h", 0)):
                 win = configuration.configData.setdefault("appUI", {}).setdefault("window", {})
                 win.update(GEOM)
+                configuration.save()
+            # remember where the mini-player pill was left
+            if isinstance(OVERLAY_GEOM.get("x"), int) and isinstance(OVERLAY_GEOM.get("y"), int):
+                ov = configuration.configData.setdefault("overlay", {})
+                ov["x"], ov["y"] = OVERLAY_GEOM["x"], OVERLAY_GEOM["y"]
                 configuration.save()
         except Exception:
             pass

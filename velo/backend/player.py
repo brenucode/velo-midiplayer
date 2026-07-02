@@ -38,6 +38,8 @@ class Player:
         self.isRunning = False
         self.paused = False
         self.speed = 100
+        self._lastShown = 0      # last playhead second (from the clock) — for live re-cue
+        self.onOverlayToggle = None  # set by the app; toggles the floating mini-player
         self._hotkeyHandlers = []
         self._bus = LogBus(emit, "player")
         self._noteBus = NoteBus(emit)
@@ -117,6 +119,10 @@ class Player:
 
     # ----- playback ---------------------------------------------------------
     def _timelineCallback(self, text, shown, total):
+        try:
+            self._lastShown = int(shown)
+        except (TypeError, ValueError):
+            pass
         self.emit("timeline", {"text": text, "current": shown, "total": total})
 
     def _startFile(self, path, offset=0):
@@ -132,6 +138,7 @@ class Player:
         self.isRunning = True
         self.paused = False
         self.playingFile = path
+        self._lastShown = int(offset)
         total = self._midiLength(path)
         self.emit("timeline", {"text": f"{self._fmt(offset)} / {self._fmt(total)}", "current": offset, "total": total})
         try:
@@ -401,6 +408,31 @@ class Player:
         self._emitState()
         return self.getState()
 
+    def setArrangeMode(self, mode):
+        """How the autoplayer performs the song: 'faith' (every note),
+        'bal' (bass + melody, thinned chords) or 'easy' (melody only).
+
+        Applied fully live: the engines read this per note, so a change takes
+        effect on the very next note with NO restart, NO gap and no stuck keys —
+        the song keeps playing exactly where it is."""
+        if mode not in ("faith", "bal", "easy"):
+            mode = "faith"
+        configuration.configData["midiPlayer"]["arrangeMode"] = mode
+        configuration.save()
+        self._emitState()
+        return self.getState()
+
+    def cycleArrangeMode(self):
+        """Advance the play style to the next one (Faithful -> Balanced -> Easy
+        -> back), re-cueing the current song live. Wired to a global hotkey."""
+        order = ("faith", "bal", "easy")
+        cur = configuration.configData["midiPlayer"].get("arrangeMode", "faith")
+        try:
+            nxt = order[(order.index(cur) + 1) % len(order)]
+        except ValueError:
+            nxt = "faith"
+        return self.setArrangeMode(nxt)
+
     def setShortNotes(self, patch):
         """Merge tuning fields (random/minMs/maxMs/fixedMs, and enabled) into the
         shared shortNotes config. Clamps the ms values to a sane, safe range."""
@@ -440,6 +472,7 @@ class Player:
     _HK_DEFAULTS = {
         "play": "f1", "pause": "f2", "stop": "f3",
         "speedup": "f4", "slowdown": "f5", "prevtrack": "f6", "nexttrack": "f7",
+        "cyclestyle": "f8", "overlay": "f9",
     }
 
     def bindHotkeys(self):
@@ -453,6 +486,8 @@ class Player:
             "slowdown": lambda: self.changeSpeed(-5),
             "prevtrack": self.prevTrack,
             "nexttrack": self.nextTrack,
+            "cyclestyle": self.cycleArrangeMode,
+            "overlay": (lambda: self.onOverlayToggle() if self.onOverlayToggle else None),
         }
         kb = {}       # key name  -> fn  (keyboard keys / symbols)
         mouse = {}    # "x1"/"x2" -> fn  (mouse side buttons M4/M5)
@@ -591,6 +626,8 @@ class Player:
                 "shortNotes": bool(configuration.configData.get("shortNotes", {}).get("enabled", False)),
             },
             "shortNotes": configuration.configData.get("shortNotes", {"enabled": False, "random": True, "minMs": 55, "maxMs": 130, "fixedMs": 100}),
+            "overlay": configuration.configData.get("overlay", {"enabled": False, "scale": 1.0, "x": None, "y": None}),
+            "arrangeMode": mp.get("arrangeMode", "faith"),
             "outputDevices": self.listOutputDevices(),
             "outputDevice": mp.get("outputDevice", ""),
             "hotkeys": configuration.configData.get("hotkeys", {}),
@@ -604,5 +641,18 @@ class Player:
     def _emitState(self):
         try:
             self.emit("state", self.getState())
+        except Exception:
+            pass
+
+    def pushTimeline(self):
+        """Emit a one-off timeline snapshot (used when the overlay opens so it
+        shows the right time/total immediately instead of waiting for the next
+        clock tick)."""
+        try:
+            ref = self.playingFile if (self.isRunning and self.playingFile) else self.currentFile
+            total = int(self._midiLength(ref)) if ref else 0
+            shown = int(self._lastShown) if self.isRunning else 0
+            self.emit("timeline", {"text": f"{self._fmt(shown)} / {self._fmt(total)}",
+                                   "current": shown, "total": total})
         except Exception:
             pass

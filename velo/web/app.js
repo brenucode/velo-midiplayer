@@ -379,6 +379,14 @@
     });
   }
 
+  let overlayOn = false;
+  function applyOverlayState(o) {
+    if (!o) return;
+    overlayOn = !!o.enabled;
+    const b = $("#winBell");
+    if (b) { b.classList.toggle("on", overlayOn); b.setAttribute("aria-pressed", overlayOn ? "true" : "false"); }
+  }
+
   function applySoundState(s) {
     if (!s) return;
     soundOn = !!s.enabled;
@@ -467,6 +475,10 @@
       c.classList.toggle("on", on);
     });
     if (s.shortNotes) applyShortNotes(s.shortNotes);
+
+    const arr = s.arrangeMode || "faith";
+    $$("#playArrange .seg-opt").forEach((o) => o.classList.toggle("active", o.dataset.arr === arr));
+    if (s.overlay) applyOverlayState(s.overlay);
 
     const midi = !!(s.options && s.options.useMIDIOutput);
     setMode(midi ? "midi" : "qwerty", false);
@@ -897,7 +909,7 @@
   }
 
   // ---------- HOTKEYS ----------
-  const HK_DEFAULTS = { play: "F1", pause: "F2", stop: "F3", speedup: "F4", slowdown: "F5", prevtrack: "F6", nexttrack: "F7" };
+  const HK_DEFAULTS = { play: "F1", pause: "F2", stop: "F3", speedup: "F4", slowdown: "F5", prevtrack: "F6", nexttrack: "F7", cyclestyle: "F8", overlay: "F9" };
   function hotkeyLabel(v) {
     if (v === "mouse:x1") return "Mouse 4";
     if (v === "mouse:x2") return "Mouse 5";
@@ -3008,6 +3020,14 @@
       if (on) ensureAudio();
       const a = api(); if (a && a.setSound) a.setSound("enabled", on);
     });
+
+    const bell = $("#winBell");
+    if (bell) bell.addEventListener("click", () => {
+      const on = !overlayOn;
+      overlayOn = on;
+      bell.classList.toggle("on", on);
+      const a = api(); if (a && a.overlaySetEnabled) a.overlaySetEnabled(on);
+    });
     $$("#soundMode .seg-opt").forEach((o) => o.addEventListener("click", () => {
       soundMode = o.dataset.smode;
       $$("#soundMode .seg-opt").forEach((x) => x.classList.toggle("active", x === o));
@@ -3022,6 +3042,12 @@
       if (soundOn) ensureAudio();   // triggers loadPack(currentPackId)
       const a = api(); if (a && a.setSound) a.setSound("pack", currentPackId);
     });
+
+    $$("#playArrange .seg-opt").forEach((o) => o.addEventListener("click", () => {
+      if (o.classList.contains("active")) return;
+      $$("#playArrange .seg-opt").forEach((x) => x.classList.toggle("active", x === o));
+      const a = api(); if (a && a.setArrangeMode) a.setArrangeMode(o.dataset.arr);
+    }));
 
     $$("#humProfile .seg-opt").forEach((o) => o.addEventListener("click", () => {
       $$("#humProfile .seg-opt").forEach((x) => x.classList.toggle("active", x === o));

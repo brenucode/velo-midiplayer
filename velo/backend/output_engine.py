@@ -8,9 +8,13 @@ import mido
 import threading
 import time
 import random
+from collections import defaultdict, deque
+
+_EMPTY = frozenset()
 
 from velo.backend import config as configuration
 from velo.backend import humanize
+from velo.backend import arrange
 
 activeTransposedNotes = {}
 activeNotes = set()
@@ -103,11 +107,15 @@ def parseMidi(message):
 def playMidiOnce(midiFile, startOffset=0.0):
     global sustainActive
     mid = mido.MidiFile(midiFile, clip=True)
+    # materialize once so the play-style arranger can thin chords (Balanced/Easy)
+    messages = list(mid)
+    onSupp = arrange.on_suppress_sets(messages)   # per-style note_on drop sets
+    stylePending = defaultdict(deque)             # per pitch: was each sounding note dropped?
     startTime = time.monotonic() - (startOffset / (playbackSpeed if playbackSpeed else 1.0))
     currentTime = 0
     songPos = 0.0
     humanizer = humanize.Humanizer()
-    for msg in mid:
+    for idx, msg in enumerate(messages):
         if stopEvent.is_set() or closeThread:
             return False
 
@@ -141,6 +149,18 @@ def playMidiOnce(midiFile, startOffset=0.0):
 
         if skipping:
             continue
+
+        # play style (live): decide per note whether to drop it, pairing each
+        # note_off with its note_on so switching style mid-song never sticks a key
+        if msg.type == "note_on" and msg.velocity > 0:
+            dropped = idx in onSupp.get(configuration.configData["midiPlayer"].get("arrangeMode", "faith"), _EMPTY)
+            stylePending[msg.note].append(dropped)
+            if dropped:
+                continue
+        elif msg.type == "note_off" or (msg.type == "note_on" and msg.velocity == 0):
+            q = stylePending.get(msg.note)
+            if q and q.popleft():
+                continue
 
         if hasattr(msg, "note"):
             n = msg.note

@@ -6,6 +6,12 @@
     "maxMs": 130,
     "fixedMs": 100
   },
+  "overlay": {
+    "enabled": false,
+    "scale": 1.0,
+    "x": null,
+    "y": null
+  },
   "midiPlayer": {
     "currentFile": "",
     "midiList": [],
@@ -17,6 +23,7 @@
     "sustain": false,
     "noDoubles": true,
     "88Keys": true,
+    "arrangeMode": "faith",
     "sustainCutoff": 63,
     "decreaseSize": 5.0,
     "customHoldLength": {

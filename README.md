@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-1c1c23?style=flat-square" />
-  <img src="https://img.shields.io/badge/version-v1.5-c8ff4d?style=flat-square&labelColor=1c1c23" />
+  <img src="https://img.shields.io/badge/version-v1.6-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/license-GPL%20v3-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/made%20by-brenu-1c1c23?style=flat-square" />
 </p>
@@ -34,12 +34,12 @@
 > - **Still blocked?** → right-click the `.zip` → **Properties** → tick **Unblock** → extract again.
 > - Peace of mind: **Velo is fully open-source (GPL v3)** — you can read every line right here in this repo, or build the `.exe` yourself.
 
-## 🆕 What's new in v1.5
+## 🆕 What's new in v1.6
 
-- 🎮 **Short notes** — release keys as quick, human-like taps instead of holding them, so your note-trails in games (Roblox pianos) look like a real player, not an autoplayer. Random (varied) or fixed timing, tunable in **Settings** — plus a live preview. Works in the Player, Drums and MIDI → Keys.
-- 🎚️ **New "Balanced" Humanize profile** — a sweet-spot feel that sits right between Subtle and Moderate.
+- 🪟 **Floating mini-player** — a small now-playing pill that stays **on top of your game** (even Roblox in fullscreen) so you can see the song, time, speed and play-style, and control playback (play/pause, skip, seek) **without alt-tabbing**. Clicking it never steals focus from the game. Drag it anywhere, resize it by the edges, and toggle it with the **bell** in the title bar or a global hotkey (default **F9**).
+- 🎛️ **Play style in the Player** — choose how the autoplayer performs any song: **Faithful** (every note), **Balanced** (keeps the bass + melody, thins dense chords) or **Easy** (melody only). Switch it live — even mid-song with a hotkey (default **F8**) — with no gap.
 
-_Recent releases — **v1.4:** Player mini-stage · custom theme colors · MIDI-keyboard practice · upgraded hotkeys (mouse M4/M5, symbols, unbind) · buzzy-sound fix._
+_Recent releases — **v1.5:** Short notes · Balanced Humanize · **v1.4:** Player mini-stage · custom theme colors · MIDI-keyboard practice · upgraded hotkeys._
 
 ## 📸 Screenshots
 
