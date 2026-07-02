@@ -1,4 +1,11 @@
 {
+  "shortNotes": {
+    "enabled": false,
+    "random": true,
+    "minMs": 55,
+    "maxMs": 130,
+    "fixedMs": 100
+  },
   "midiPlayer": {
     "currentFile": "",
     "midiList": [],

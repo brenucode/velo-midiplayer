@@ -133,8 +133,9 @@ def findVelocityKey(velocity):
 
 def pressAndMaybeRelease(key):
     press(key)
-    if configuration.configData["midiToQwerty"]["customHoldLength"]["enabled"]:
-        t = threading.Timer(configuration.configData["midiToQwerty"]["customHoldLength"]["noteLength"], lambda: release(key))
+    hold = configuration.short_hold_seconds()   # short human tap when "Short notes" is on
+    if hold is not None:
+        t = threading.Timer(hold, lambda: release(key))
         timerList.append(t)
         t.start()
 

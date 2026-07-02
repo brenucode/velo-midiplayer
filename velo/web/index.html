@@ -69,7 +69,7 @@
           <span class="nav-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.5M12 18.5V21M21 12h-2.5M5.5 12H3M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8M18.4 18.4l-1.8-1.8M7.4 7.4 5.6 5.6"/></svg></span>
           <span class="nav-label">Settings</span>
         </button>
-        <div class="rail-foot">Velo<span>v1.4</span></div>
+        <div class="rail-foot">Velo<span>v1.5</span></div>
       </nav>
 
       <main class="content">
@@ -161,6 +161,7 @@
                 <button class="chip" data-opt="velocity">Velocity</button>
                 <button class="chip" data-opt="88Keys">88 keys</button>
                 <button class="chip" data-opt="loopSong">Loop</button>
+                <button class="chip" data-opt="shortNotes" title="Release keys as quick human-like taps so your note trails look legit in games (tune it in Settings)">Short notes</button>
               </div>
               <div class="device-row" id="deviceRow" hidden>
                 <label>Output device</label>
@@ -524,11 +525,42 @@
             </div>
             <div class="hk-hint">Plays the note (real piano sample) or a real mechanical key sound in the app, synced to the song. Extra keyboard models stream online (cached after first use); the default brown works offline. To make it come out of your microphone (so others hear you "playing"): install a virtual audio cable (VB-CABLE), route Velo's audio to it in Windows sound settings, and pick it as your mic in Discord.</div>
           </div>
-          <div class="card humanize reveal" style="--d:2">
+          <div class="card shortnotes reveal" style="--d:2">
+            <div class="card-title">Short notes — look legit in games</div>
+            <div class="sn-sub">Instead of holding a key for the note's full length, Velo taps it and lets go fast — so your note-trails in Roblox pianos look like a real player, not an autoplayer.</div>
+            <div class="sn-ctl">
+              <button class="chip" id="snToggle">Off</button>
+              <div class="seg" id="snMode">
+                <button class="seg-opt active" data-snmode="random">Random</button>
+                <button class="seg-opt" data-snmode="fixed">Fixed</button>
+              </div>
+            </div>
+            <div class="sn-body" id="snBody">
+              <div class="sn-presets" id="snPresets">
+                <button class="sn-preset" data-min="45" data-max="90">Fast</button>
+                <button class="sn-preset" data-min="55" data-max="130">Natural</button>
+                <button class="sn-preset" data-min="100" data-max="180">Chill</button>
+              </div>
+              <div id="snRandom">
+                <div class="sound-vol"><span>Min</span><input type="range" id="snMin" min="30" max="300" value="55" /><span id="snMinVal">55 ms</span></div>
+                <div class="sound-vol"><span>Max</span><input type="range" id="snMax" min="30" max="300" value="130" /><span id="snMaxVal">130 ms</span></div>
+              </div>
+              <div id="snFixed" hidden>
+                <div class="sound-vol"><span>Hold</span><input type="range" id="snFixedS" min="30" max="300" value="100" /><span id="snFixedVal">100 ms</span></div>
+              </div>
+              <div class="sn-preview">
+                <div class="sn-preview-head"><span>Note-trail preview</span><span class="sn-preview-tag" id="snTag">~55–130 ms taps</span></div>
+                <canvas id="snPreview"></canvas>
+              </div>
+            </div>
+            <div class="hk-hint">Real players tap keys for ~50–150 ms; a long hold leaves a long trail that screams autoplayer. Pair this with <b>Humanize</b> below (which varies <i>when</i> notes fire) for the most convincing result. Works in the Player, Drums and MIDI → Keys. When on, it overrides Sustain.</div>
+          </div>
+          <div class="card humanize reveal" style="--d:3">
             <div class="card-title">Humanize — natural feel</div>
             <div class="seg" id="humProfile">
               <button class="seg-opt active" data-hum="off">Off</button>
               <button class="seg-opt" data-hum="subtle">Subtle</button>
+              <button class="seg-opt" data-hum="balanced">Balanced</button>
               <button class="seg-opt" data-hum="moderate">Moderate</button>
               <button class="seg-opt" data-hum="loose">Loose</button>
             </div>
@@ -556,7 +588,7 @@
             <div class="about-row">
               <span class="about-mark"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M5 19V5l8 4-8 4" fill="currentColor"/><path d="M14 5v14M19 5v14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span>
               <div>
-                <div class="about-name">Velo <span class="about-ver">v1.4</span></div>
+                <div class="about-name">Velo <span class="about-ver">v1.5</span></div>
                 <div class="about-sub">MIDI player — QWERTY &amp; MIDI output</div>
               </div>
             </div>

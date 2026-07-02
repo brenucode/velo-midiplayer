@@ -37,6 +37,7 @@ _MAX_VEL_PCT = 42.0      # widest ± velocity swing
 # Presets in slider units (roll / timing / rubato / velocity, each 0-100).
 PRESETS = {
     "subtle":   {"roll": 18, "timing": 17, "rubato": 12, "velocity": 22},
+    "balanced": {"roll": 30, "timing": 28, "rubato": 20, "velocity": 37},
     "moderate": {"roll": 43, "timing": 40, "rubato": 29, "velocity": 52},
     "loose":    {"roll": 68, "timing": 69, "rubato": 60, "velocity": 71},
 }

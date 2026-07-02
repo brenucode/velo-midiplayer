@@ -253,6 +253,9 @@ class Api:
     def setOption(self, key, value):
         return PLAYER.setOption(key, value)
 
+    def setShortNotes(self, patch):
+        return PLAYER.setShortNotes(patch)
+
     def setSound(self, key, value):
         return PLAYER.setSound(key, value)
 

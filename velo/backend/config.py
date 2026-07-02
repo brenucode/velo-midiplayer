@@ -10,13 +10,38 @@ import os
 import sys
 import json
 import copy
+import random
 
 from velo.backend import platcompat
 
 APP_NAME = "Velo"
 # Single source of truth for the running version (keep in sync with version.txt).
 # The updater compares this against the latest GitHub release tag.
-APP_VERSION = "1.4"
+APP_VERSION = "1.5"
+
+# Floor so a tap is always long enough for the game to register the key press.
+SHORT_NOTES_FLOOR_MS = 30
+
+
+def short_hold_seconds():
+    """How long a simulated key should stay down when 'Short notes' is on.
+
+    Returns None when the feature is off (the engine then holds the key for the
+    note's real duration). When on, returns a SHORT hold in seconds — a random
+    human-like dwell time (Random mode) or a fixed one — so long notes become
+    quick taps and the in-game note-trail looks like a real player, not autoplay.
+    """
+    sn = configData.get("shortNotes")
+    if not sn or not sn.get("enabled"):
+        return None
+    floor = SHORT_NOTES_FLOOR_MS
+    if sn.get("random", True):
+        lo = max(floor, int(sn.get("minMs", 55)))
+        hi = max(lo, int(sn.get("maxMs", 130)))
+        ms = random.uniform(lo, hi)
+    else:
+        ms = max(floor, int(sn.get("fixedMs", 100)))
+    return ms / 1000.0
 
 
 def resourcePath(relativePath):

@@ -390,10 +390,37 @@ class Player:
 
     # ----- options ----------------------------------------------------------
     def setOption(self, key, value):
-        configuration.configData["midiPlayer"][key] = bool(value)
+        if key == "shortNotes":
+            # shared top-level config (used by Player/Drums/MIDI->Keys), not midiPlayer
+            configuration.configData.setdefault("shortNotes", {})["enabled"] = bool(value)
+        else:
+            configuration.configData["midiPlayer"][key] = bool(value)
         configuration.save()
         if key == "useMIDIOutput" and self.isRunning:
             self.stop()
+        self._emitState()
+        return self.getState()
+
+    def setShortNotes(self, patch):
+        """Merge tuning fields (random/minMs/maxMs/fixedMs, and enabled) into the
+        shared shortNotes config. Clamps the ms values to a sane, safe range."""
+        sn = configuration.configData.setdefault(
+            "shortNotes", {"enabled": False, "random": True, "minMs": 55, "maxMs": 130, "fixedMs": 100})
+        if not isinstance(patch, dict):
+            return self.getState()
+        if "enabled" in patch:
+            sn["enabled"] = bool(patch["enabled"])
+        if "random" in patch:
+            sn["random"] = bool(patch["random"])
+        for f in ("minMs", "maxMs", "fixedMs"):
+            if f in patch:
+                try:
+                    sn[f] = max(30, min(400, int(round(float(patch[f])))))
+                except (TypeError, ValueError):
+                    pass
+        if int(sn.get("minMs", 55)) > int(sn.get("maxMs", 130)):   # keep min <= max
+            sn["minMs"], sn["maxMs"] = sn["maxMs"], sn["minMs"]
+        configuration.save()
         self._emitState()
         return self.getState()
 
@@ -561,7 +588,9 @@ class Player:
                 "velocity": bool(mp.get("velocity", False)),
                 "88Keys": bool(mp.get("88Keys", True)),
                 "loopSong": bool(mp.get("loopSong", False)),
+                "shortNotes": bool(configuration.configData.get("shortNotes", {}).get("enabled", False)),
             },
+            "shortNotes": configuration.configData.get("shortNotes", {"enabled": False, "random": True, "minMs": 55, "maxMs": 130, "fixedMs": 100}),
             "outputDevices": self.listOutputDevices(),
             "outputDevice": mp.get("outputDevice", ""),
             "hotkeys": configuration.configData.get("hotkeys", {}),

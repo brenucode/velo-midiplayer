@@ -466,6 +466,7 @@
       const on = !!(s.options && s.options[c.dataset.opt]);
       c.classList.toggle("on", on);
     });
+    if (s.shortNotes) applyShortNotes(s.shortNotes);
 
     const midi = !!(s.options && s.options.useMIDIOutput);
     setMode(midi ? "midi" : "qwerty", false);
@@ -557,6 +558,7 @@
     else if (name === "keys") { const a = api(); if (a && a.inputState) a.inputState().then(applyInputState); }
     else if (name === "settings") { const a = api(); if (a && a.getState) a.getState().then((s) => applyHotkeys(s.hotkeys)); }
     if (name === "player") msEnter(); else msLeave();
+    if (name === "settings") snPreviewStart(); else snPreviewStop();
   }
 
   // ---------- MIDI Hub ----------
@@ -2893,6 +2895,68 @@
     const a = api(); if (a && a.setSkin) a.setSkin((document.body.style.getPropertyValue("--accent") || AC_DEFAULT).trim());
   }
 
+  // ---------- SHORT NOTES (legit human taps — Settings hub + Player chip) ----------
+  let snCfg = { enabled: false, random: true, minMs: 55, maxMs: 130, fixedMs: 100 };
+  function applyShortNotes(sn) {
+    if (!sn) return;
+    snCfg = Object.assign({}, snCfg, sn);
+    const tog = $("#snToggle");
+    if (tog) { tog.textContent = snCfg.enabled ? "On" : "Off"; tog.classList.toggle("on", !!snCfg.enabled); }
+    const body = $("#snBody"); if (body) body.classList.toggle("off", !snCfg.enabled);
+    $$("#snMode .seg-opt").forEach((o) => o.classList.toggle("active", (o.dataset.snmode === "random") === !!snCfg.random));
+    const rnd = $("#snRandom"); if (rnd) rnd.hidden = !snCfg.random;
+    const fix = $("#snFixed"); if (fix) fix.hidden = !!snCfg.random;
+    const setS = (id, val, lbl) => {
+      const s = $("#" + id);
+      if (s) { s.value = val; s.style.setProperty("--fill", (((s.value - s.min) / (s.max - s.min)) * 100) + "%"); }
+      const l = $("#" + lbl); if (l) l.textContent = val + " ms";
+    };
+    setS("snMin", snCfg.minMs, "snMinVal");
+    setS("snMax", snCfg.maxMs, "snMaxVal");
+    setS("snFixedS", snCfg.fixedMs, "snFixedVal");
+    $$("#snPresets .sn-preset").forEach((p) => p.classList.toggle("active", !!snCfg.random && +p.dataset.min === +snCfg.minMs && +p.dataset.max === +snCfg.maxMs));
+    const tag = $("#snTag");
+    if (tag) tag.textContent = snCfg.random ? ("~" + snCfg.minMs + "–" + snCfg.maxMs + " ms taps") : (snCfg.fixedMs + " ms taps");
+  }
+  // deterministic pseudo-random per index (stable across frames → no flicker)
+  function snRand(i) { const x = Math.sin(i * 12.9898) * 43758.5453; return x - Math.floor(x); }
+  let snRaf = 0, snCtx = null, snW = 0, snH = 0, snDpr = 1;
+  function snPreviewResize() {
+    const cv = $("#snPreview"); if (!cv) return;
+    const r = cv.getBoundingClientRect(); if (r.width < 2) return;
+    snDpr = Math.min(2, window.devicePixelRatio || 1);
+    snW = r.width; snH = r.height;
+    cv.width = Math.round(snW * snDpr); cv.height = Math.round(snH * snDpr);
+    snCtx = cv.getContext("2d"); snCtx.setTransform(snDpr, 0, 0, snDpr, 0, 0);
+  }
+  function snPreviewFrame(t) {
+    if (!snCtx) { snRaf = 0; return; }
+    const ctx = snCtx, W = snW, H = snH, hit = H - 12;
+    ctx.clearRect(0, 0, W, H);
+    const rgb = msTheme.rgb, barCol = "rgba(" + rgb + ",.9)";
+    ctx.fillStyle = "rgba(" + rgb + ",.3)"; ctx.fillRect(0, hit, W, 1);   // hit line
+    const lanes = 7, laneW = W / lanes, maxTrail = 46, period = 1.4, nowS = t / 1000;
+    ctx.fillStyle = barCol;
+    for (let l = 0; l < lanes; l++) {
+      for (let k = 0; k < 2; k++) {                                        // 2 taps per lane in flight
+        const seed = nowS / period + l * 0.37 + k * 0.5;
+        const phase = seed - Math.floor(seed);
+        const y = phase * (H + maxTrail) - maxTrail;                       // falling head
+        const idx = Math.floor(seed);
+        const ms = snCfg.random ? (snCfg.minMs + snRand(idx * 31 + l) * Math.max(0, snCfg.maxMs - snCfg.minMs)) : snCfg.fixedMs;
+        const trail = Math.max(5, (ms / 300) * maxTrail);                  // TRAIL length ∝ hold ms
+        const top = Math.max(0, y - trail), bottom = Math.min(y, hit);
+        if (bottom <= top) continue;
+        ctx.globalAlpha = y > hit ? Math.max(0, 1 - (y - hit) / 12) : 1;
+        ctx.fillRect(l * laneW + laneW / 2 - 5, top, 10, bottom - top);
+      }
+    }
+    ctx.globalAlpha = 1;
+    snRaf = requestAnimationFrame(snPreviewFrame);
+  }
+  function snPreviewStart() { if (snRaf) return; snPreviewResize(); if (snCtx) snRaf = requestAnimationFrame(snPreviewFrame); }
+  function snPreviewStop() { if (snRaf) cancelAnimationFrame(snRaf); snRaf = 0; }
+
   let isFullscreen = false;
   function toggleFullscreen() {
     const a = api(); if (!a || !a.toggleFullscreen) return;
@@ -2905,6 +2969,22 @@
     $$("#swatchRow .swatch[data-color]").forEach((s) => s.addEventListener("click", () => setAccent(s.dataset.color)));
     const cc = $("#customColor");
     if (cc) { cc.addEventListener("input", () => applyAccent(cc.value)); cc.addEventListener("change", () => setAccent(cc.value)); }
+
+    // --- Short notes (Settings hub) ---
+    const snT = $("#snToggle");
+    if (snT) snT.addEventListener("click", () => call("setShortNotes", { enabled: !snCfg.enabled }));
+    $$("#snMode .seg-opt").forEach((o) => o.addEventListener("click", () => call("setShortNotes", { random: o.dataset.snmode === "random" })));
+    $$("#snPresets .sn-preset").forEach((p) => p.addEventListener("click", () => call("setShortNotes", { random: true, minMs: +p.dataset.min, maxMs: +p.dataset.max })));
+    const snLive = (id, lbl) => {
+      const s = $("#" + id), l = $("#" + lbl);
+      if (s && l) s.addEventListener("input", () => {
+        l.textContent = s.value + " ms";
+        s.style.setProperty("--fill", (((s.value - s.min) / (s.max - s.min)) * 100) + "%");
+      });
+    };
+    snLive("snMin", "snMinVal"); snLive("snMax", "snMaxVal"); snLive("snFixedS", "snFixedVal");
+    const snCh = (id, field) => { const s = $("#" + id); if (s) s.addEventListener("change", () => { const o = {}; o[field] = +s.value; call("setShortNotes", o); }); };
+    snCh("snMin", "minMs"); snCh("snMax", "maxMs"); snCh("snFixedS", "fixedMs");
 
     $$(".mode-opt").forEach((o) =>
       o.addEventListener("click", () => setMode(o.dataset.mode, true)));
