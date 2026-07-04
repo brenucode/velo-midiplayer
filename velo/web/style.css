@@ -21,6 +21,7 @@
   --ease-out:cubic-bezier(.16,1,.3,1);
   --font:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,sans-serif;
   --mono:"Cascadia Code","Consolas",ui-monospace,monospace;
+  --bg-image: none;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 [hidden]{display:none!important}
@@ -29,6 +30,12 @@ body{
   background:var(--bg);color:var(--txt);font-family:var(--font);
   font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased;
   user-select:none;
+}
+
+body.image-bg { /* Background implementation */
+    background:
+        linear-gradient(var(--accent), var(--accent-dim)),
+        var(--bg-image) center center / cover no-repeat fixed;
 }
 button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:none}
 ::-webkit-scrollbar{width:9px;height:9px}

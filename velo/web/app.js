@@ -88,18 +88,20 @@
   let pianoLoadingId = null;
   const pianoInsts = {};
 
-  // Online keyboard sound library (Mechvibes packs via jsdelivr CDN).
+  // Online keyboard sound library (Mechvibes 1 via jsdelivr CDN).
   const MECH = "https://cdn.jsdelivr.net/gh/hainguyents13/mechvibes@2.3.6/src/audio/";
   const PACKS = [
     { id: "brown-local", label: "Cherry MX Brown (default · offline)", local: true },
-    { id: "cherrymx-black-abs", label: "Cherry MX Black", base: MECH + "cherrymx-black-abs/" },
-    { id: "cherrymx-blue-abs", label: "Cherry MX Blue", base: MECH + "cherrymx-blue-abs/" },
-    { id: "cherrymx-brown-abs", label: "Cherry MX Brown (ABS)", base: MECH + "cherrymx-brown-abs/" },
-    { id: "cherrymx-red-abs", label: "Cherry MX Red", base: MECH + "cherrymx-red-abs/" },
-    { id: "cherrymx-black-pbt", label: "Cherry MX Black · PBT", base: MECH + "cherrymx-black-pbt/" },
-    { id: "cherrymx-blue-pbt", label: "Cherry MX Blue · PBT", base: MECH + "cherrymx-blue-pbt/" },
-    { id: "cherrymx-brown-pbt", label: "Cherry MX Brown · PBT", base: MECH + "cherrymx-brown-pbt/" },
-    { id: "cherrymx-red-pbt", label: "Cherry MX Red · PBT", base: MECH + "cherrymx-red-pbt/" },
+    { id: "cherrymx-black-abs", label: "Cherry MX Black", base: MECH + "cherrymx-black-abs/", local:false },
+    { id: "cherrymx-blue-abs", label: "Cherry MX Blue", base: MECH + "cherrymx-blue-abs/", local:false},
+    { id: "cherrymx-brown-abs", label: "Cherry MX Brown (ABS)", base: MECH + "cherrymx-brown-abs/", local:false },
+    { id: "cherrymx-red-abs", label: "Cherry MX Red", base: MECH + "cherrymx-red-abs/", local:false },
+    { id: "cherrymx-black-pbt", label: "Cherry MX Black · PBT", base: MECH + "cherrymx-black-pbt/", local:false },
+    { id: "cherrymx-blue-pbt", label: "Cherry MX Blue · PBT", base: MECH + "cherrymx-blue-pbt/", local:false},
+    { id: "cherrymx-brown-pbt", label: "Cherry MX Brown · PBT", base: MECH + "cherrymx-brown-pbt/", local:false },
+    { id: "cherrymx-red-pbt", label: "Cherry MX Red · PBT", base: MECH + "cherrymx-red-pbt/", local:false },
+  
+   
   ];
   const packData = {};
   let currentPackId = "brown-local";
