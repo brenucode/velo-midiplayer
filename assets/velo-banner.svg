@@ -1,0 +1,24 @@
+<svg viewBox="0 0 1200 320" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="-10%" r="75%">
+      <stop offset="0%" stop-color="#c8ff4d" stop-opacity="0.13"/>
+      <stop offset="60%" stop-color="#c8ff4d" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="320" fill="#0a0a0c"/>
+  <rect width="1200" height="320" fill="url(#g)"/>
+
+  <!-- logo mark -->
+  <rect x="430" y="106" width="92" height="92" rx="24" fill="#c8ff4d"/>
+  <g transform="translate(430,106) scale(0.359)" fill="#0c1400">
+    <path d="M62 72 62 184 140 128Z"/>
+    <rect x="156" y="72" width="15" height="112" rx="7.5"/>
+    <rect x="182" y="72" width="15" height="112" rx="7.5"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="548" y="186" font-size="104" font-weight="700" letter-spacing="-2" fill="#f3f3f6">Velo</text>
+
+  <!-- tagline -->
+  <text x="600" y="250" text-anchor="middle" font-size="19" font-weight="600" letter-spacing="6" fill="#7a7a86">MIDI&#160;PLAYER&#160;&#183;&#160;PRACTICE&#160;STUDIO&#160;&#183;&#160;STAGE</text>
+</svg>
