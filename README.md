@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-1c1c23?style=flat-square" />
-  <img src="https://img.shields.io/badge/version-v2.1-c8ff4d?style=flat-square&labelColor=1c1c23" />
+  <img src="https://img.shields.io/badge/version-v2.4.0-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/license-Proprietary-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/made%20by-brenu-1c1c23?style=flat-square" />
 </p>
@@ -34,21 +34,31 @@
 > - **Antivirus deleted a file and Velo won't open?** → restore it from quarantine (commonly `Velo\_internal\pythonnet\runtime\Python.Runtime.dll`) and add the Velo folder as an exception.
 > - **Still blocked?** → right-click the `.zip` → **Properties** → tick **Unblock** → extract again.
 
-## Velo 2.1 — the Visualizer
+## Velo 2.4 — Your setup, your rules
 
-🎆 **A fully customizable visualizer** — the falling-notes view is now a real, tunable light show. Ten **scene wallpapers** behind the notes, real **effects** (glow, particles, shockwaves, streaklets, chord-reactive bloom), a **rainbow** mode where notes cycle color forever (with an adjustable spin speed), your own **note & saber colors**, adjustable **darken / blur / vignette**, and a **auto-hiding gear** with one-click presets (Clean · Velo · Cinema · Overdrive · Light). It's measured to stay smooth (60fps), and it now drives **Practice → Free play and Rhythm** too — not just Stage. Recording a clip? Grab it with **OBS**.
+⌨️ **Song key-binds** — bind any queued song to a single key and trigger it from **anywhere**, even from inside a game. Right-click a song in the queue (or hit its little keyboard button) and press a key — one key, one song. Keys the player itself types are refused automatically, so a playing song can't re-trigger itself.
 
-## Velo 2.0 — Compose
+🎥 **Stream mode** — hide Velo from **OBS, screen-share and screenshots** while it stays fully visible on your own screen (**Settings → Appearance**). An optional sub-toggle also hides it from the **taskbar and Alt-Tab** for a completely clean capture, gated behind the "Show / hide Velo" hotkey so you always have a way back. Honest about its limits, right in the UI: it stays on your own monitor, and it can't hide from a **capture card / two-PC setup** (that's a second machine filming the screen — nothing on this PC can hide from it).
 
-🎹 **Compose** — make your own music, right inside Velo. A full **piano-roll editor**: **record** on your keyboard (with a 3·2·1 count-in), **paste** a Virtual-Piano sheet, **import** a MIDI, or **draw** notes with the mouse. A clean studio visualizer shows a real piano keyboard, glossy notes, a **ghost-note preview** of where each note will land, a pitch/position readout that follows your cursor, plus zoom-to-cursor and scrub-to-hear. **Save** it to your library, **export** a `.mid` or a sheet, or **Publish** it straight to the online library. It runs both here in the app **and** in your browser at **[velomidi.com/compose](https://velomidi.com/compose)**.
+🎼 **Bring your own soundfont (.sf2 / .sf3)** — load *any* SoundFont — a Keppy Steinway, a concert grand, an organ — and it becomes your live instrument everywhere (Free play, Compose, playback), **without bloating the app**. The engine is tiny (~800 KB); the only weight is your own file, and only while it's selected. Remove it and you're instantly back to the built-in sounds. Prefer **SF3** — same sound, far lighter on RAM. **Settings → Playing → Your soundfont**.
 
-🎛️ **One keyboard, everywhere** — a unified MIDI-input layer means your MIDI keyboard now works the same in **Practice**, **MIDI → Keys** and **Compose**, on Windows and Linux.
+🔌 **MIDI output, made clear** — friendlier in-app guidance for sending Velo's notes to a **DAW, an instrument plugin, or a game's "MIDI-connect" helper** through a virtual MIDI cable (loopMIDI), instead of dead-ending on Windows' built-in synth.
 
-↔️ **Expandable mini-player** — drag the pill's edge to widen it into a top bar so long song names fit.
+✨ **Fixes** — the global **Show / Hide** hotkey now reliably brings Velo to the front every time, even over a full-screen game; and several settings dropdowns that could show "Select…" instead of your saved choice are fixed.
 
-🛡️ **Your library is safe when you update** — updating Velo no longer wipes your songs, backgrounds, compositions or settings. If you unzipped Velo *inside* your `Documents\Velo` folder, older versions could delete it during "Update and Restart" — **back it up once before updating to 2.0**, and from here on it's protected automatically.
+## Earlier releases
 
-<sub>Earlier: **v1.9** added **Velo Scan** (find the MIDIs already on your PC and import them — grouped by folder, no duplicates, undoable). **v1.8.2** added 9 keyboard-sound models, searchable dropdowns and a tabbed Settings redesign.</sub>
+<details>
+<summary><b>What landed in v2.3 → v1.8</b></summary>
+
+- **v2.3 — 24 sounds:** grand, bright and electric pianos, Rhodes/FM, harpsichord, clavinet, celesta, music box, vibraphone, marimba, organs and more, all in **Settings → Playing → Sound** (core pianos offline; the rest stream and cache on first use).
+- **v2.2 — Play with feeling:** **QWERTY velocity** (computer-keyboard notes respond to *how* you play, and it drives the visualizer's brightness) and an optional **sustain pedal (Space)** so keyboard Free play feels like a real piano. Both in **Settings → Playing**, off by default.
+- **v2.1 — the Visualizer:** the falling-notes view became a tunable light show — 10 scene wallpapers, real effects (glow, particles, shockwaves, streaklets, chord-reactive bloom), a **rainbow** mode, your own note & saber colors, darken/blur/vignette, and an **auto-hiding gear** with one-click presets. Measured to stay at 60fps, and it drives **Practice → Free play and Rhythm** too, not just Stage.
+- **v2.0 — Compose:** a full built-in **piano-roll editor** (record, paste a sheet, import a MIDI or draw notes; save a `.mid`, export a sheet, or publish to the library — also at **[velomidi.com/compose](https://velomidi.com/compose)**), a **unified MIDI-input layer** so your keyboard works the same in Practice / MIDI → Keys / Compose, an **expandable mini-player**, and **update-safe data** so your songs, backgrounds and settings survive an update.
+- **v1.9 — Velo Scan:** find the MIDIs already on your PC and import them, grouped by folder, no duplicates, undoable.
+- **v1.8.2:** 9 keyboard-sound models, searchable dropdowns and a tabbed Settings redesign.
+
+</details>
 
 
 ## 📸 Screenshots
@@ -71,7 +81,7 @@
 
 ## ✨ What it does
 
-- 🎹 **Player** — plays MIDI via **keyboard (QWERTY)** or **MIDI output**. Song queue, speed control, previous/next, and **global hotkeys** that work even with the app in the background. A **floating mini-player** stays on top of your game, with a **Select Music** window to jump to any queued song (search, favorites, shuffle, loop).
+- 🎹 **Player** — plays MIDI via **keyboard (QWERTY)** or **MIDI output**. Song queue, speed control, previous/next, and **global hotkeys** that work even with the app in the background. A **floating mini-player** stays on top of your game, with a **Select Music** window to jump to any queued song (search, favorites, shuffle, loop). Bind a **song to a key** to trigger it from anywhere.
 - ✨ **Compose** — a built-in **piano-roll editor** to make your own music: record on your keyboard (3·2·1 count-in), paste a Virtual-Piano sheet, import a MIDI or draw notes, with a clean studio visualizer (ghost-note preview, live pitch/position readout, zoom-to-cursor, scrub-to-hear, loop shading). Save a `.mid`, export a sheet, or **publish to the library**. Also runs in the browser at **[velomidi.com/compose](https://velomidi.com/compose)**.
 - 🎯 **Practice** — three modes on a 61-key piano that lights up which key to press:
   - **Step** — learn note by note, at your own pace. Miss it? It waits until you get it right.
@@ -81,9 +91,10 @@
 - 🌐 **MIDI Hub** — search and download songs from three libraries without leaving Velo: the **nanoMIDI** library, **Online Sequencer**, and **BitMidi**. Pick the source from the dropdown; results show up in Velo's own UI.
 - 🔎 **Velo Scan** — find the MIDI files already sitting on your computer and add them to your library. Tap the sonar, choose where to look, review the results grouped by folder, and import only what you want — no duplicates, and undoable.
 - ▦ **Stage mode** — notes fall onto a **fullscreen** piano and the song **plays as they cross**, synced to what's playing, and they **follow your play style** (Faithful/Balanced/Easy). Perfect to leave on screen for Discord/streaming.
+- 🎥 **Stream mode** — hide Velo from OBS, screen-share and screenshots (and optionally from the taskbar) while it stays visible on your own screen — for a clean capture.
 - 🎭 **Humanizer** — optional human feel: chord roll, timing/release wander, rubato and velocity variation, with profiles + sliders. Off by default (exact, mechanical original).
 - 🥁 **Drums** and ⌨️ **MIDI → Keys** — turn a MIDI controller into a keyboard in real time.
-- 🔊 **Real sound** — several **piano** models (Grand, Bright, Electric…) plus a **Cherry MX** mechanical-keyboard sound.
+- 🔊 **Real sound** — **24 instruments** (grand/bright/electric pianos, Rhodes, harpsichord, organs, mallets and more) plus a **Cherry MX** mechanical-keyboard sound — or **load your own `.sf2` / `.sf3` soundfont**.
 - 🏆 **Records** per song · 🖥️ **responsive** layout + **fullscreen (F11)**.
 
 ## 🎼 Companion app — VeloScribe
@@ -146,7 +157,13 @@ You can remap any of them in **Settings**. They work even when Velo is minimized
 2. **Play** (or `F1`). Velo "types" the song into your virtual piano keys.
 3. Want to play in a game (Roblox, etc.)? Keep the game focused and use the hotkeys — the keystrokes go to it.
 
-> **QWERTY vs MIDI Output:** choose at the top of the Player. *QWERTY* simulates the keyboard (for in-game pianos). *MIDI Output* sends to an instrument/DAW via a MIDI port.
+> **QWERTY vs MIDI Output:** choose at the top of the Player. *QWERTY* simulates the keyboard (for in-game pianos). *MIDI Output* sends real MIDI notes — with velocity and sustain — to a MIDI port.
+
+**Sending MIDI to another program on the same PC.** A MIDI port normally goes to hardware, so to reach a program running beside Velo you need a **virtual MIDI cable** — the same idea as VB-CABLE for audio (§5). Install **[loopMIDI](https://www.tobias-erichsen.de/software/loopmidi.html)** (free), create a port, then pick it under *Output device*. Anything that reads MIDI input — a DAW, an instrument plugin, or a helper app — will see Velo as if it were a MIDI keyboard plugged into the PC.
+
+> ⚠️ Windows' built-in *Microsoft GS Wavetable Synth* is a dead end: it makes sound, but can't pass the notes on to another program.
+
+> **About game "MIDI mode":** some virtual-piano games advertise MIDI support, but that support usually comes from a **separate helper app** that reads a MIDI keyboard and turns it into keystrokes — the game itself doesn't read MIDI ports. If your game works that way, pointing that helper at a loopMIDI port fed by Velo is worth a try. If it doesn't, **QWERTY mode already sends the keystrokes directly**, which is where that chain ends up anyway.
 
 ### 2. Download songs (MIDI Hub)
 1. **MIDI Hub** tab → pick a source (**nanoMIDI**, **Online Sequencer** or **BitMidi**) and search by name.
@@ -177,6 +194,8 @@ The idea: route Velo's piano sound into your virtual "microphone".
 5. Done — whoever's listening hears the piano as if it were you playing.
 
 > Want to **talk and play at the same time**? Use **VoiceMeeter** to mix your real mic + Velo's audio into one channel.
+
+> **Pick your sound.** Under **Settings → Playing → Sound**, choose from **24 instruments** — grand, bright and electric pianos, Rhodes/FM, harpsichord, clavinet, celesta, music box, vibraphone, marimba, organs and more. The core pianos ship offline; the rest stream and cache on first use. Want a specific piano? **Load your own `.sf2` / `.sf3` soundfont** under **Your soundfont** and it becomes the live instrument everywhere (prefer SF3 — same sound, lighter on RAM).
 
 ### 6. Drums and MIDI → Keys
 - **Drums:** same idea as the Player, with a drum map.
