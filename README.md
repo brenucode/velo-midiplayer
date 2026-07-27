@@ -124,15 +124,18 @@ Velo automatically removes the "downloaded from the internet" mark from its own 
 
 ## 🐧 Linux
 
-Velo runs on Linux too — **Fedora, Ubuntu/Debian, Arch, openSUSE**. It uses your system's WebKit, so it's a quick one-time setup in a terminal:
+Velo runs on Linux too — **Fedora, Ubuntu/Debian, Arch, openSUSE**. It uses your system's WebKit (the reliable way — no fragile bundled browser), so it's a quick one-time setup in a terminal:
+
+1. Download **`velo-linux.tar.gz`** from **[Releases](../../releases)**.
+2. Extract it and run the installer:
 
 ```bash
-git clone https://github.com/brenucode/velo-midiplayer.git
-cd velo-midiplayer
+tar xzf velo-linux.tar.gz
+cd velo-linux
 ./install-linux.sh
 ```
 
-The installer pulls the libraries it needs, sets everything up, and adds **Velo** to your applications menu — then just search **"Velo"** and launch it like any app (or run `velo`). Full guide + troubleshooting: **[README-LINUX.md](README-LINUX.md)**.
+The installer pulls the libraries it needs (GTK + WebKit + PyGObject via your distro's package manager), sets everything up, and adds **Velo** to your applications menu — then just search **"Velo"** and launch it like any app (or run `velo`). Full guide + troubleshooting: **[README-LINUX.md](README-LINUX.md)**.
 
 > The "type the song into another app" feature (game pianos like Roblox / Virtual Piano) needs an **X11 / Xorg** session — Wayland blocks app-to-app typing. Everything else (player, sound, Practice, Stage) works on both.
 
@@ -227,7 +230,7 @@ scripts\build-velo-win.bat
 
 The app lands in `dist\Velo\Velo.exe`.
 
-**On Linux**, just run `./run-linux.sh` (or `./install-linux.sh` to also add it to your apps menu) — see [README-LINUX.md](README-LINUX.md) for the system packages it needs.
+**On Linux**, grab the **`velo-linux.tar.gz`** from [Releases](../../releases) (see the [🐧 Linux](#-linux) section above) — extract it and run `./install-linux.sh` to set it up and add it to your apps menu, or `./run-linux.sh` to just run it in place. Details in [README-LINUX.md](README-LINUX.md).
 
 ## 📄 License & why Velo is no longer open-source
 
