@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-1c1c23?style=flat-square" />
-  <img src="https://img.shields.io/badge/version-v2.4.0-c8ff4d?style=flat-square&labelColor=1c1c23" />
+  <img src="https://img.shields.io/badge/version-v2.5.0-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/license-Proprietary-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/made%20by-brenu-1c1c23?style=flat-square" />
 </p>
@@ -34,22 +34,37 @@
 > - **Antivirus deleted a file and Velo won't open?** → restore it from quarantine (commonly `Velo\_internal\pythonnet\runtime\Python.Runtime.dll`) and add the Velo folder as an exception.
 > - **Still blocked?** → right-click the `.zip` → **Properties** → tick **Unblock** → extract again.
 
-## Velo 2.4 — Your setup, your rules
+## Velo 2.5 — The engine, rebuilt
 
-⌨️ **Song key-binds** — bind any queued song to a single key and trigger it from **anywhere**, even from inside a game. Right-click a song in the queue (or hit its little keyboard button) and press a key — one key, one song. Keys the player itself types are refused automatically, so a playing song can't re-trigger itself.
+The biggest change to how Velo *plays* since it existed — and almost none of it is a new button. Velo looks the same, and then it plays, and you can hear the difference.
 
-🎥 **Stream mode** — hide Velo from **OBS, screen-share and screenshots** while it stays fully visible on your own screen (**Settings → Appearance**). An optional sub-toggle also hides it from the **taskbar and Alt-Tab** for a completely clean capture, gated behind the "Show / hide Velo" hotkey so you always have a way back. Honest about its limits, right in the UI: it stays on your own monitor, and it can't hide from a **capture card / two-PC setup** (that's a second machine filming the screen — nothing on this PC can hide from it).
+**Four things were quietly broken the whole time.** Not features that were missing: features that were **there, switched on, and doing nothing.**
 
-🎼 **Bring your own soundfont (.sf2 / .sf3)** — load *any* SoundFont — a Keppy Steinway, a concert grand, an organ — and it becomes your live instrument everywhere (Free play, Compose, playback), **without bloating the app**. The engine is tiny (~800 KB); the only weight is your own file, and only while it's selected. Remove it and you're instantly back to the built-in sounds. Prefer **SF3** — same sound, far lighter on RAM. **Settings → Playing → Your soundfont**.
+- 🎹 **Chords land together.** A five-note chord was five separate trips into the operating system, one key at a time, and anything that happened in between — the browser waking up, a frame being painted — spread it out. You heard a rolled chord you never asked for. The whole chord now leaves in **one call**.
+- ⏱️ **The clock was rounding every note onto a 15 ms grid**, before anything else had a chance to go wrong. To put that in scale: a sixteenth note at 120 BPM is 125 ms. Measured wait error went from **11 ms to 0.004 ms**.
+- 🔑 **Extended notes jammed keys in the game.** Notes past the main 61 keys are played with **Ctrl** held, and their release was being sent without it — so the game never ended the note and **the key stayed down**. Any song with a bass line below C2 could do it.
+- 🎚️ **Velocity never reached the game.** It reads Alt through a *delayed* callback; Velo sent Alt and the level key with no gap, so the flag wasn't set yet and the key was read as an ordinary note. Your dynamics did nothing — and spent four extra key events on **every note** doing it.
 
-🔌 **MIDI output, made clear** — friendlier in-app guidance for sending Velo's notes to a **DAW, an instrument plugin, or a game's "MIDI-connect" helper** through a virtual MIDI cable (loopMIDI), instead of dead-ending on Windows' built-in synth.
+**And new things to use:**
 
-✨ **Fixes** — the global **Show / Hide** hotkey now reliably brings Velo to the front every time, even over a full-screen game; and several settings dropdowns that could show "Select…" instead of your saved choice are fixed.
+- 🆘 **Panic — release all keys** (`Ctrl + Alt + P`, rebindable). Everything held — notes, Shift, Ctrl, Alt, the sustain pedal — lets go, **without leaving the game**. Before this, a stuck key meant finding Velo's window.
+- 🎭 **Expression** (`Off · Natural · Dramatic`) — dynamics taken from the music itself. Most MIDI has none at all, which is why playback can sound like a machine reading a list. Velo reads how busy the music is, where each note sits in its phrase and how the line rises and falls. *Only works on pianos that support velocity keybinds, so it ships off.*
+- 🔄 **Fold range** *(on)* — notes above or below the keyboard used to be **dropped in silence**. They're moved into reach instead: one octave at most, and never on top of a note already sounding.
+- 🎼 **Auto-fit key** *(off)* — the other answer to the same problem: move the **whole song** into a key that fits. Every interval survives, so it still sounds like the piece. Off by default, because transposing does change the key of something you know.
+- 🪟 **Stay in window** *(on)* — Velo learns where you played the first note and holds if you tab away, so a song can never get typed into your Discord chat. The song clock holds with it, so you come back where you left off — and Velo's own windows don't trigger it.
+- 📚 **Playlists** — named sets of your songs, each in its own order (a full FNAF list in chronological order, a practice set), without disturbing anything else. Drag a song onto a tab, or use **Add songs**. Next, previous, shuffle, the end-of-song advance and the floating **Select Music** window all follow the open playlist.
+- 🗑️ **A Trash** — removing a song used to un-happen at the next launch, because Velo re-reads its Midis folder on startup and nothing recorded that you meant it. Removed songs now move to **Velo/Trash**, a real folder you can open, and the Trash button puts them back. Adding a song that's already in the trash restores it instead of leaving you a working copy and a twin in the bin.
+- 🎹 **Octaves ×1–×5**, 🎚️ **per-track mute**, and ✨ **Flourish** — a run across the whole keyboard on demand, for when someone in chat says you're autoplaying. Three of them, and bindable to a key.
+- 🎛️ **A MIDI keyboard that gets unplugged** is waited for and reopened instead of going deaf in silence — and whatever it was holding is released, not left down in the game.
+
+🐧 **Linux got fixed properly** — see the [Linux section](#-linux) below.
 
 ## Earlier releases
 
 <details>
-<summary><b>What landed in v2.3 → v1.8</b></summary>
+<summary><b>What landed in v2.4 → v1.8</b></summary>
+
+- **v2.4 — Your setup, your rules:** **song key-binds** (bind a queued song to one key and trigger it from anywhere), **stream mode** (hide Velo from OBS, screen-share and screenshots while it stays visible to you), **bring your own soundfont** (`.sf2` / `.sf3`, without bloating the app), and friendlier guidance for sending MIDI to a DAW or plugin through loopMIDI.
 
 - **v2.3 — 24 sounds:** grand, bright and electric pianos, Rhodes/FM, harpsichord, clavinet, celesta, music box, vibraphone, marimba, organs and more, all in **Settings → Playing → Sound** (core pianos offline; the rest stream and cache on first use).
 - **v2.2 — Play with feeling:** **QWERTY velocity** (computer-keyboard notes respond to *how* you play, and it drives the visualizer's brightness) and an optional **sustain pedal (Space)** so keyboard Free play feels like a real piano. Both in **Settings → Playing**, off by default.
@@ -81,7 +96,7 @@
 
 ## ✨ What it does
 
-- 🎹 **Player** — plays MIDI via **keyboard (QWERTY)** or **MIDI output**. Song queue, speed control, previous/next, and **global hotkeys** that work even with the app in the background. A **floating mini-player** stays on top of your game, with a **Select Music** window to jump to any queued song (search, favorites, shuffle, loop). Bind a **song to a key** to trigger it from anywhere.
+- 🎹 **Player** — plays MIDI via **keyboard (QWERTY)** or **MIDI output**. Song queue, **playlists** (named sets in their own order), speed control, previous/next, and **global hotkeys** that work even with the app in the background. A **floating mini-player** stays on top of your game, with a **Select Music** window to jump to any queued song (search, favorites, shuffle, loop). Bind a **song to a key** to trigger it from anywhere, and a **Trash** so removing one is never final.
 - ✨ **Compose** — a built-in **piano-roll editor** to make your own music: record on your keyboard (3·2·1 count-in), paste a Virtual-Piano sheet, import a MIDI or draw notes, with a clean studio visualizer (ghost-note preview, live pitch/position readout, zoom-to-cursor, scrub-to-hear, loop shading). Save a `.mid`, export a sheet, or **publish to the library**. Also runs in the browser at **[velomidi.com/compose](https://velomidi.com/compose)**.
 - 🎯 **Practice** — three modes on a 61-key piano that lights up which key to press:
   - **Step** — learn note by note, at your own pace. Miss it? It waits until you get it right.
@@ -137,7 +152,11 @@ cd velo-linux
 
 The installer pulls the libraries it needs (GTK + WebKit + PyGObject via your distro's package manager), sets everything up, and adds **Velo** to your applications menu — then just search **"Velo"** and launch it like any app (or run `velo`). Full guide + troubleshooting: **[README-LINUX.md](README-LINUX.md)**.
 
-> The "type the song into another app" feature (game pianos like Roblox / Virtual Piano) needs an **X11 / Xorg** session — Wayland blocks app-to-app typing. Everything else (player, sound, Practice, Stage) works on both.
+**New in 2.5 — Wayland works now.** Velo used to run as a native Wayland client, where the compositor forbids the two things Velo is *for*: putting its own window on top of your game, and typing into another application. That's why the mini-player and the autoplayer both looked dead on a Wayland desktop. Velo now runs itself through **XWayland**, where both come back — no session switching, nothing to configure.
+
+Two more things that release fixed: the bug that **heated laptops** (Velo was disabling GPU compositing for every Linux user, so the CPU was drawing every frame of the visualizer), and a new **`velo --doctor`** that reports *measured* facts about your machine rather than guesses — it really types a character, really moves a window, and tells you what to do about what it finds. It runs even when the app won't start.
+
+> Two honest limits. A game written as a **native Wayland client** still can't receive synthetic keys from anything — ask it to run on X11 instead (SDL games take `SDL_VIDEODRIVER=x11`; for Sober: `flatpak run --env=SDL_VIDEODRIVER=x11 org.vinegarhq.Sober`). And **velocity / Expression don't reach the game on Linux** — that path can't send the modifier timing the game needs.
 
 ## ⌨️ Global hotkeys
 
@@ -246,6 +265,8 @@ Older versions that were released under **GPL v3 stay under GPL v3** for the cop
 Copyright © 2026 brenu. **All rights reserved.** See [LICENSE](LICENSE).
 
 Velo is built on the playback engine of **[nanoMIDIPlayer](https://github.com/NotHammer043/nanoMIDIPlayer)** (NotHammer043), used **with the author's permission** — thanks for the base.
+
+The 2.5 engine work owes three things to **M7xt** (RAMP) — batching a whole chord into one key-output call, the modifier timing that makes velocity actually reach the game, and the Ctrl-release requirement that was leaving keys stuck — shared in a mutual code exchange. The implementation here is Velo's own.
 
 Sounds: **MusyngKite** pianos ([midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts)) and the **Cherry MX** keyboard ([Mechvibes](https://github.com/hainguyents13/mechvibes)).
 
