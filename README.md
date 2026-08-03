@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-1c1c23?style=flat-square" />
-  <img src="https://img.shields.io/badge/version-v2.5.0-c8ff4d?style=flat-square&labelColor=1c1c23" />
+  <img src="https://img.shields.io/badge/version-v2.5.1-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/license-Proprietary-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/made%20by-brenu-1c1c23?style=flat-square" />
 </p>
@@ -33,6 +33,17 @@
 > - **"Windows protected your PC"** → click **More info → Run anyway**.
 > - **Antivirus deleted a file and Velo won't open?** → restore it from quarantine (commonly `Velo\_internal\pythonnet\runtime\Python.Runtime.dll`) and add the Velo folder as an exception.
 > - **Still blocked?** → right-click the `.zip` → **Properties** → tick **Unblock** → extract again.
+
+## Velo 2.5.1 — Put back what a scan moved
+
+Velo Scan finds the MIDIs already on your PC and adds them to your library. Adding **moves** the files — deliberately, so a song doesn't end up sitting on your disk twice. The problem was what came after: Velo only remembered where each file came from until you closed the app. Reopen it the next day, find the folders you'd spent years organising empty, hit Undo, and there was nothing left to undo with.
+
+Nothing was ever deleted. But "it's all still there, somewhere in one flat folder" is not much comfort when you had it sorted by composer.
+
+- 📦 **Put back** *(Settings › Library)* — a list of every song a scan moved and the folder each one goes back to. Tick what you want; not the whole import, just what you pick. It works months later, and it survives restarts and updates.
+- 🗑️ **The Trash could delete the wrong song.** Removing two songs within a moment of each other gave them the same internal id, so **Delete forever** — the one button in Velo that really deletes a file — could take the song you hadn't selected. If your Trash already holds a pair like that, Velo repairs it on startup.
+
+> ⚠️ Velo's library is **one flat folder**, and your own subfolders aren't recreated inside it. If you've sorted your MIDIs into folders you care about, keep a copy before you scan. Put back will rebuild them, but a copy costs you nothing.
 
 ## Velo 2.5 — The engine, rebuilt
 
