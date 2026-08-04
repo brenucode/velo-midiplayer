@@ -75,7 +75,7 @@ The biggest change to how Velo *plays* since it existed — and almost none of i
 <details>
 <summary><b>What landed in v2.4 → v1.8</b></summary>
 
-- **v2.4 — Your setup, your rules:** **song key-binds** (bind a queued song to one key and trigger it from anywhere), **stream mode** (hide Velo from OBS, screen-share and screenshots while it stays visible to you), **bring your own soundfont** (`.sf2` / `.sf3`, without bloating the app), and friendlier guidance for sending MIDI to a DAW or plugin through loopMIDI.
+- **v2.4 — Your setup, your rules:** **song key-binds** (bind a queued song to one key and trigger it from anywhere), **stream mode** (hide Velo from OBS, screen-share and screenshots while it stays visible to you), **bring your own soundfont** (`.sf2` / `.sf3`, without bloating the app), and friendlier guidance for sending MIDI to a DAW or plugin through loopMIDI. **v2.4.1** then went over Practice: a **Sustain** toggle for Free play, **Sheet** coloured by how you actually played each note and openable **fullscreen**, **Step** rebuilt on the same canvas as the other modes, and the piano filling the screen properly.
 
 - **v2.3 — 24 sounds:** grand, bright and electric pianos, Rhodes/FM, harpsichord, clavinet, celesta, music box, vibraphone, marimba, organs and more, all in **Settings → Playing → Sound** (core pianos offline; the rest stream and cache on first use).
 - **v2.2 — Play with feeling:** **QWERTY velocity** (computer-keyboard notes respond to *how* you play, and it drives the visualizer's brightness) and an optional **sustain pedal (Space)** so keyboard Free play feels like a real piano. Both in **Settings → Playing**, off by default.
@@ -109,10 +109,11 @@ The biggest change to how Velo *plays* since it existed — and almost none of i
 
 - 🎹 **Player** — plays MIDI via **keyboard (QWERTY)** or **MIDI output**. Song queue, **playlists** (named sets in their own order), speed control, previous/next, and **global hotkeys** that work even with the app in the background. A **floating mini-player** stays on top of your game, with a **Select Music** window to jump to any queued song (search, favorites, shuffle, loop). Bind a **song to a key** to trigger it from anywhere, and a **Trash** so removing one is never final.
 - ✨ **Compose** — a built-in **piano-roll editor** to make your own music: record on your keyboard (3·2·1 count-in), paste a Virtual-Piano sheet, import a MIDI or draw notes, with a clean studio visualizer (ghost-note preview, live pitch/position readout, zoom-to-cursor, scrub-to-hear, loop shading). Save a `.mid`, export a sheet, or **publish to the library**. Also runs in the browser at **[velomidi.com/compose](https://velomidi.com/compose)**.
-- 🎯 **Practice** — three modes on a 61-key piano that lights up which key to press:
+- 🎯 **Practice** — four modes on a 61-key piano that lights up which key to press:
   - **Step** — learn note by note, at your own pace. Miss it? It waits until you get it right.
   - **Rhythm** — turns into a rhythm game: notes fall in time, with **Perfect / Good / Miss**, combo, multiplier and a life bar.
-  - **Free play** — a free piano (keyboard or mouse), with **rising trails** on every note and a **preview** that plays the song for you.
+  - **Sheet** — the song written out as Virtual-Piano letters, each one **coloured by how you actually played it** (on time / early / late / missed), readable fullscreen.
+  - **Free play** — a free piano (keyboard or mouse), with **rising trails** on every note, an optional **sustain** pedal, and a **preview** that plays the song for you.
   - **Section trainer** — pick the hard part and drill it in **slow motion that speeds up** as you nail it.
 - 🌐 **MIDI Hub** — search and download songs from three libraries without leaving Velo: the **nanoMIDI** library, **Online Sequencer**, and **BitMidi**. Pick the source from the dropdown; results show up in Velo's own UI.
 - 🔎 **Velo Scan** — find the MIDI files already sitting on your computer and add them to your library. Tap the sonar, choose where to look, review the results grouped by folder, and import only what you want — no duplicates, and undoable.
@@ -180,8 +181,18 @@ Two more things that release fixed: the bug that **heated laptops** (Velo was di
 | `F5` | Slow down |
 | `F6` | Previous track |
 | `F7` | Next track |
+| `F8` | Cycle play style (Faithful / Balanced / Easy) |
+| `F9` | Show / hide the floating mini-player |
+| `Ctrl` + `Alt` + `P` | **Panic — release every held key** |
+| — | Show / hide Velo itself *(unbound by default)* |
+| — | Toggle sustain *(unbound by default)* |
+| — | Flourish — a run across the keyboard *(unbound by default)* |
 
-You can remap any of them in **Settings**. They work even when Velo is minimized — handy for controlling it while you're in a game.
+All of them are remappable in **Settings › Appearance**, including **mouse buttons M4/M5**, and modifier combos like `Alt + Shift + F`. They work while Velo is minimised — which is the point, since you'll be inside a game.
+
+**Panic is the one to remember.** The autoplayer holds keys down; if a song is interrupted at the wrong moment you can be left with keys stuck in a game you can no longer type in. Panic lets go of everything — notes, Shift, Ctrl, Alt, the sustain pedal — **without leaving the game**. It's the only optional action that ships already bound.
+
+You can also bind **a song to a key** (Player › the key icon on a queued song) and start it from anywhere.
 
 ## 🧭 How to use
 
@@ -205,12 +216,15 @@ You can remap any of them in **Settings**. They work even when Velo is minimized
 > **Online Sequencer:** the first search opens a one-time check in a small window (it usually clears itself in a few seconds); after that, searching and downloading happen entirely inside Velo.
 
 ### 3. Practice
-1. **Practice** tab → pick a mode (**Step / Rhythm / Free play**) and a song.
+1. **Practice** tab → pick a mode (**Step / Rhythm / Sheet / Free play**) and a song.
 2. The on-screen keyboard lights up the right keys (sharps = **Shift**).
-   - **Step:** press in sequence, no rush.
-   - **Rhythm:** hit each note as it reaches the line.
-   - **Free play:** play freely; pick a song and hit **Play (preview)** to watch it play itself.
-3. **Section trainer:** toggle it on and drag the handles to drill just one part, slowly.
+   - **Step:** press in sequence, no rush. It waits until you get it right.
+   - **Rhythm:** hit each note as it reaches the line — **Perfect / Good / Miss**, combo, multiplier and a life bar.
+   - **Sheet:** the whole song written out as Virtual-Piano letters. Each letter is **coloured by how you actually played it** — green on time, orange early or late, red missed — so you can see where you drift rather than guess. Opens **fullscreen** for reading from across the desk.
+   - **Free play:** play freely on the keyboard or with the mouse, with **rising trails** on every note. Pick a song and hit **Play (preview)** to watch it play itself. **Sustain** is one toggle here, shared with the Settings switch and a rebindable hotkey.
+3. **Section trainer:** toggle it on and drag the handles to drill just one part, in **slow motion that speeds up** as you nail it.
+
+> All four modes share the same visualizer and the same lit keys, and the gear that tunes the Stage tunes these too.
 
 ### 4. Stage mode (visualizer)
 On the **Player**, click **Stage** (or `F11` for fullscreen). Hit play on a song and the notes fall onto the piano and play as they cross, in sync — great for streaming.
@@ -241,26 +255,13 @@ The idea: route Velo's piano sound into your virtual "microphone".
 
 > Prefer the browser? The exact same editor lives at **[velomidi.com/compose](https://velomidi.com/compose)**.
 
-## 🛠️ Run from source
+## 🛠️ Running Velo
 
-Requirements: **Python 3.12** (Windows) and the **WebView2 Runtime**.
+**Windows** — download `Velo-win.zip` from [Releases](../../releases), extract it anywhere, run `Velo.exe`. Nothing to install.
 
-```bash
-python -m venv venv-win
-venv-win\Scripts\activate
-pip install -r requirements.txt
-python velo_app.py
-```
+**Linux** — download `velo-linux.tar.gz`, extract, run `./install-linux.sh` (see the [🐧 Linux](#-linux) section). To run it in place without installing, `./run-linux.sh`.
 
-To build the `.exe` (PyInstaller, anti-false-positive setup):
-
-```bash
-scripts\build-velo-win.bat
-```
-
-The app lands in `dist\Velo\Velo.exe`.
-
-**On Linux**, grab the **`velo-linux.tar.gz`** from [Releases](../../releases) (see the [🐧 Linux](#-linux) section above) — extract it and run `./install-linux.sh` to set it up and add it to your apps menu, or `./run-linux.sh` to just run it in place. Details in [README-LINUX.md](README-LINUX.md).
+> **There is no source to build here.** This repository is the download page and the documentation — Velo's code is private (see below), so there's no `requirements.txt` to install and no build script to run. Earlier versions up to **v2.0** were GPL v3 and their source is still in the history of the tags that shipped them.
 
 ## 📄 License & why Velo is no longer open-source
 
@@ -274,10 +275,6 @@ Older versions that were released under **GPL v3 stay under GPL v3** for the cop
 
 **Velo** — created by **brenu** · [github.com/brenucode](https://github.com/brenucode)
 Copyright © 2026 brenu. **All rights reserved.** See [LICENSE](LICENSE).
-
-Velo is built on the playback engine of **[nanoMIDIPlayer](https://github.com/NotHammer043/nanoMIDIPlayer)** (NotHammer043), used **with the author's permission** — thanks for the base.
-
-The 2.5 engine work owes three things to **M7xt** (RAMP) — batching a whole chord into one key-output call, the modifier timing that makes velocity actually reach the game, and the Ctrl-release requirement that was leaving keys stuck — shared in a mutual code exchange. The implementation here is Velo's own.
 
 Sounds: **MusyngKite** pianos ([midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts)) and the **Cherry MX** keyboard ([Mechvibes](https://github.com/hainguyents13/mechvibes)).
 
