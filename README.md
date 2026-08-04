@@ -9,7 +9,8 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-1c1c23?style=flat-square" />
-  <img src="https://img.shields.io/badge/version-v2.5.1-c8ff4d?style=flat-square&labelColor=1c1c23" />
+  <img src="https://img.shields.io/badge/macOS-beta-f0a020?style=flat-square&labelColor=1c1c23" />
+  <img src="https://img.shields.io/badge/version-v2.5.2-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/license-Proprietary-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/made%20by-brenu-1c1c23?style=flat-square" />
 </p>
@@ -33,6 +34,19 @@
 > - **"Windows protected your PC"** → click **More info → Run anyway**.
 > - **Antivirus deleted a file and Velo won't open?** → restore it from quarantine (commonly `Velo\_internal\pythonnet\runtime\Python.Runtime.dll`) and add the Velo folder as an exception.
 > - **Still blocked?** → right-click the `.zip` → **Properties** → tick **Unblock** → extract again.
+
+## Velo 2.5.2 — Velo runs on Mac, and four bugs members found
+
+**🍎 macOS is here.** Native builds for Apple Silicon and Intel, with the permission setup macOS demands handled for you instead of left as homework. It's an **open beta** and we say so plainly: every other platform got years of people finding things, and this one has had none. See the [macOS section](#-macos--beta-and-it-needs-your-reports) below — and if something's off, please open a **ticket on the Discord server**.
+
+The four fixes, all reported by members:
+
+- 🎹 **A MIDI keyboard was sending a burst of extra keystrokes on every note.** Velo changes the game's velocity level with a key combination, and with a MIDI keyboard it was sending that combination on *every* note instead of only when the dynamic actually changed — 160 keystrokes where 4 were needed. Without the gaps between them the game reads the level key as an ordinary note: the setting did nothing **and** a wrong note played. That's the noise, and the two notes at once. QWERTY was never affected, which is exactly why it looked like a hardware problem.
+- 🔇 **MIDI → Keys could type the piano into whatever window was focused.** The guard that keeps notes inside the game was only wired to the autoplayer. Live MIDI input runs in the background all the time, so alt-tabbing to Discord mid-song sent the notes there.
+- 👻 **Half the Player could vanish when you came back to Velo.** The file card and the transport row were only visible because an entrance animation finished. An animation that never ran meant an element gone for good, and the only cure was switching tabs and back. Nothing in Velo depends on an animation finishing to be visible any more.
+- ⏸️ **The Queue could show a song playing when nothing was.** If the playback thread hit an error it died silently, and Velo went on believing the song was still going. Worse: the same routine is what releases held keys, so a crash mid-chord could leave a key pressed down inside the game. Now it reports what happened, recovers, and lets go of the keys.
+
+Plus: Stream mode works on macOS, and `velo --doctor` now prints what your copy of Velo can actually do on your machine.
 
 ## Velo 2.5.1 — Put back what a scan moved
 
@@ -131,6 +145,10 @@ Got a song with no MIDI? **[VeloScribe](https://github.com/brenucode/veloscribe)
 ## ⬇️ Download (ready to use)
 
 > No Python, nothing to install.
+> **On a Mac?** Go to the [🍎 macOS section](#-macos--beta-and-it-needs-your-reports) — the steps there are different and step 2 matters.
+> **On Linux?** The [🐧 Linux section](#-linux).
+
+### Windows
 
 1. Go to **[Releases](../../releases)** and download `Velo-win.zip`.
 2. Extract the folder anywhere.
@@ -169,6 +187,28 @@ The installer pulls the libraries it needs (GTK + WebKit + PyGObject via your di
 Two more things that release fixed: the bug that **heated laptops** (Velo was disabling GPU compositing for every Linux user, so the CPU was drawing every frame of the visualizer), and a new **`velo --doctor`** that reports *measured* facts about your machine rather than guesses — it really types a character, really moves a window, and tells you what to do about what it finds. It runs even when the app won't start.
 
 > Two honest limits. A game written as a **native Wayland client** still can't receive synthetic keys from anything — ask it to run on X11 instead (SDL games take `SDL_VIDEODRIVER=x11`; for Sober: `flatpak run --env=SDL_VIDEODRIVER=x11 org.vinegarhq.Sober`). And **velocity / Expression don't reach the game on Linux** — that path can't send the modifier timing the game needs.
+
+## 🍎 macOS — **beta, and it needs your reports**
+
+Velo runs on macOS from 2.5.2. **This is the first public build for the Mac and it is openly a test:** every other platform got years of members finding things; this one has had none. It is here so that can start.
+
+> ### 🐞 Found something? Open a ticket on the Discord server.
+> Not a message in chat, where it scrolls away — a **ticket**, so it doesn't get lost and we can ask you follow-up questions. Say which Mac you have (Apple menu → About This Mac), your macOS version, and what you were doing.
+
+**Which file?** Apple menu → **About This Mac**. *Chip: Apple M1/M2/M3/M4* → **`Velo-mac-AppleSilicon.dmg`**. *Processor: Intel* → **`Velo-mac-Intel.dmg`**. The Intel build runs on Apple Silicon through Rosetta; the Apple Silicon build does **not** run on an Intel Mac at all.
+
+1. Download your `.dmg` from **[Releases](../../releases)**.
+2. Open it and **drag Velo into the Applications folder — before you open it.**
+3. Open **Applications** and double-click **Velo**. macOS will refuse, because Velo isn't signed with an Apple certificate.
+4. **System Settings → Privacy & Security**, scroll to the bottom, click **Open Anyway**, confirm.
+5. Velo will ask for **Accessibility**. Say yes — that's the permission that lets it press keys in the game. Without it the autoplayer runs and nothing happens.
+6. macOS only applies that permission **when an app launches**, so Velo notices when you grant it and offers to reopen itself. Let it.
+
+> ⚠️ **Step 2 is not housekeeping.** For an unsigned app, macOS ties the permission to **where the app is**. Open it from Downloads and move it to Applications later, and Velo silently loses that permission — the autoplayer stops working and nothing tells you why.
+
+Full guide, including the second permission (**Input Monitoring**, for the global hotkeys): **[README-MAC.md](README-MAC.md)**.
+
+> **Two limits that belong to macOS, not to Velo.** A game in **native fullscreen** gets a Space of its own and *nothing* can appear over it — keep the game in a window if you want the mini-player. And **non-US keyboard layouts can play the wrong note**: the Mac key path resolves keys by character rather than by physical position. Known, on the list, and exactly what this beta exists to hear about.
 
 ## ⌨️ Global hotkeys
 
@@ -258,6 +298,8 @@ The idea: route Velo's piano sound into your virtual "microphone".
 ## 🛠️ Running Velo
 
 **Windows** — download `Velo-win.zip` from [Releases](../../releases), extract it anywhere, run `Velo.exe`. Nothing to install.
+
+**macOS** *(beta)* — download `Velo-mac-AppleSilicon.dmg` or `Velo-mac-Intel.dmg`, **drag Velo into Applications before opening it**, then follow the permission steps in the [🍎 macOS](#-macos--beta-and-it-needs-your-reports) section.
 
 **Linux** — download `velo-linux.tar.gz`, extract, run `./install-linux.sh` (see the [🐧 Linux](#-linux) section). To run it in place without installing, `./run-linux.sh`.
 
