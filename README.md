@@ -10,7 +10,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-1c1c23?style=flat-square" />
   <img src="https://img.shields.io/badge/macOS-beta-f0a020?style=flat-square&labelColor=1c1c23" />
-  <img src="https://img.shields.io/badge/version-v2.5.2-c8ff4d?style=flat-square&labelColor=1c1c23" />
+  <img src="https://img.shields.io/badge/version-v2.6.0-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/license-Proprietary-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/made%20by-brenu-1c1c23?style=flat-square" />
 </p>
@@ -34,6 +34,19 @@
 > - **"Windows protected your PC"** → click **More info → Run anyway**.
 > - **Antivirus deleted a file and Velo won't open?** → restore it from quarantine (commonly `Velo\_internal\pythonnet\runtime\Python.Runtime.dll`) and add the Velo folder as an exception.
 > - **Still blocked?** → right-click the `.zip` → **Properties** → tick **Unblock** → extract again.
+
+## Velo 2.6.0 - Sheet music, straight into your library
+
+The biggest release Velo has had, and one feature carries it.
+
+- 🎼 **MuseScore now lands in your library.** Open the MIDI Hub, pick **MuseScore**, search a song or paste a score link - and it's yours, ready to play. No browser, no downloader site, no account. You can **browse** it too, by instrument and difficulty, with the difficulty and the length on the card before you commit to anything. And every score somebody brings in is **shared**, so the next person to want it gets it instantly rather than fetching it again.
+- 🎚️ **Tracks stopped hiding.** Choosing which tracks play is a feature Velo has had for months, and people kept asking for it - because the control only appeared *after* you pressed Play, and the song Velo restores on startup never got one at all. Whoever opened the app looking for it met the one case where it was reliably absent. It's there from the moment a song loads now, and when there is nothing to split it says so instead of vanishing.
+- 🎥 **Recording-friendly mode.** Some recorders and capture cards cannot see a GPU-drawn window and record a black box where Velo should be. This draws on the CPU instead. Settings -> Appearance. *(Windows only.)*
+- ✨ **The visualizer runs smooth.** Five separate causes of stutter, all fixed - the worst being that the clock ran while the file was still being parsed, which is the *"the first song after opening always freezes"* people reported. Colours are one per track now, read from the file itself.
+- 🍎 **macOS got its hotkeys back.** The one that matters isn't play/pause - it's **Panic**, your way out when a key sticks in a game you can't type in. And ⌘Q no longer walks away with your keys still held down.
+- 🔧 **Two arrangements of the same song no longer overwrite each other.** They shared a filename, so the first one silently disappeared. Files are named by arranger now.
+
+**Known limits, stated on purpose:** macOS is still a public beta - drag Velo to Applications *before* you open it the first time, because permissions are tied to where it lives. And on macOS and Linux a non-US keyboard layout can play the wrong note: Velo types by character there, where the Windows path types by key position. The app now tells you so in Settings -> Playing.
 
 ## Velo 2.5.2 — Velo runs on Mac, and four bugs members found
 
