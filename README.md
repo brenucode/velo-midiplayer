@@ -8,9 +8,8 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-1c1c23?style=flat-square" />
-  <img src="https://img.shields.io/badge/macOS-beta-f0a020?style=flat-square&labelColor=1c1c23" />
-  <img src="https://img.shields.io/badge/version-v2.6.0-c8ff4d?style=flat-square&labelColor=1c1c23" />
+  <img src="https://img.shields.io/badge/platform-Windows-1c1c23?style=flat-square" />
+  <img src="https://img.shields.io/badge/version-v2.7.0-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/license-Proprietary-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/made%20by-brenu-1c1c23?style=flat-square" />
 </p>
@@ -35,6 +34,19 @@
 > - **Antivirus deleted a file and Velo won't open?** → restore it from quarantine (commonly `Velo\_internal\pythonnet\runtime\Python.Runtime.dll`) and add the Velo folder as an exception.
 > - **Still blocked?** → right-click the `.zip` → **Properties** → tick **Unblock** → extract again.
 
+## Velo 2.7.0 — Two hands, one of them yours
+
+Velo could always play a song for you. Now it can play *half* of one.
+
+- 🖐️ **Hands — play one, let Velo play the other.** Click one side of the keyboard strip and Velo stops typing that hand into the game: it's yours now. Turn on **Guide** and Velo keeps playing the other hand on its own piano, so you're playing *with* it instead of watching it. **Practice one hand at a time** with the same split the Player uses, **each hand in its own colour**, and the falling notes now show only what is actually being played — the muted half fades to glass, or disappears when nothing is sounding it. Velo also worked out something it could never say before: **how many people a piece needs.** One hand, two, four, or an arrangement no pair of hands can play — a symphony exported to MIDI is no longer described as "left or right".
+- 🎛️ **Configs — your whole setup, in one preset.** Sound, background, visualizer, keyboard, playing options: save the lot under a name. Sign in and it follows you to another PC, which is the whole point of having a second one. Publish yours and other people can **Try** it — applied for real, not a preview, with one click back to your own.
+- ⌨️ **Your keyboard, not an American one.** If your layout isn't US, Velo was pressing the *letter* your keyboard prints instead of the *position* the game reads — so the wrong note played and nothing said why. It presses the position now, every letter on screen shows the key on **your** keyboard, and Velo tells you which layout it recognised. Auto or US, and nothing in between pretending to be one.
+- 🔌 **MIDI out from Practice.** The Practice piano can play through a MIDI port — pick it in the sound picker and a DAW or a VST plays what you play. Your velocity travels, and so does the sustain pedal on a real MIDI keyboard.
+- ⚡ **It stopped eating your CPU.** Velo was burning **a whole processor core doing nothing** — open on any tab, idle. It was a background animation repainting two full-screen layers sixty times a second, forever, and one of those layers was invisible. It's about **1%** now, and nothing looks different. A big song also opens roughly twice as fast and holds a third of the memory it used to, because it was being read off your disk three times just to open it once.
+- 🎼 **Transcribe is a tab in the app now** — the same queue as the bot and the site. **Settings** was rebuilt into five tabs instead of walls of paragraphs, and you can **save the letter sheet** straight out of Practice.
+
+**Known limits, stated on purpose:** from this version on the **Linux and macOS builds are paused** — see the sections below. And three controls in here were quietly doing nothing before this release: the hand strip never listened to a click, Guide made no sound at all, and the Practice hand buttons died in Free play. If something in Velo looks like it should work and doesn't, saying so on the Discord is what gets it found.
+
 ## Velo 2.6.0 - Sheet music, straight into your library
 
 The biggest release Velo has had, and one feature carries it.
@@ -50,7 +62,7 @@ The biggest release Velo has had, and one feature carries it.
 
 ## Velo 2.5.2 — Velo runs on Mac, and four bugs members found
 
-**🍎 macOS is here.** Native builds for Apple Silicon and Intel, with the permission setup macOS demands handled for you instead of left as homework. It's an **open beta** and we say so plainly: every other platform got years of people finding things, and this one has had none. See the [macOS section](#-macos--beta-and-it-needs-your-reports) below — and if something's off, please open a **ticket on the Discord server**.
+**🍎 macOS is here.** Native builds for Apple Silicon and Intel, with the permission setup macOS demands handled for you instead of left as homework. It's an **open beta** and we say so plainly: every other platform got years of people finding things, and this one has had none. See the [macOS section](#-macos--paused-after-262) below — and if something's off, please open a **ticket on the Discord server**.
 
 The four fixes, all reported by members:
 
@@ -136,6 +148,8 @@ The biggest change to how Velo *plays* since it existed — and almost none of i
 
 - 🎹 **Player** — plays MIDI via **keyboard (QWERTY)** or **MIDI output**. Song queue, **playlists** (named sets in their own order), speed control, previous/next, and **global hotkeys** that work even with the app in the background. A **floating mini-player** stays on top of your game, with a **Select Music** window to jump to any queued song (search, favorites, shuffle, loop). Bind a **song to a key** to trigger it from anywhere, and a **Trash** so removing one is never final.
 - ✨ **Compose** — a built-in **piano-roll editor** to make your own music: record on your keyboard (3·2·1 count-in), paste a Virtual-Piano sheet, import a MIDI or draw notes, with a clean studio visualizer (ghost-note preview, live pitch/position readout, zoom-to-cursor, scrub-to-hear, loop shading). Save a `.mid`, export a sheet, or **publish to the library**. Also runs in the browser at **[velomidi.com/compose](https://velomidi.com/compose)**.
+- 🖐️ **Hands** — Velo plays one hand while you play the other, live. Click a half of the keyboard strip to take it over, turn on **Guide** and Velo keeps the other one singing. Works in Practice too, one hand at a time, with each hand in its own colour on the falling notes.
+- 🎛️ **Configs** — save your whole setup (sound, background, visualizer, keyboard, playing options) as a named preset, sync it to another PC by signing in, and publish it or try someone else's.
 - 🎯 **Practice** — four modes on a 61-key piano that lights up which key to press:
   - **Step** — learn note by note, at your own pace. Miss it? It waits until you get it right.
   - **Rhythm** — turns into a rhythm game: notes fall in time, with **Perfect / Good / Miss**, combo, multiplier and a life bar.
@@ -158,14 +172,15 @@ Got a song with no MIDI? **[VeloScribe](https://github.com/brenucode/veloscribe)
 ## ⬇️ Download (ready to use)
 
 > No Python, nothing to install.
-> **On a Mac?** Go to the [🍎 macOS section](#-macos--beta-and-it-needs-your-reports) — the steps there are different and step 2 matters.
-> **On Linux?** The [🐧 Linux section](#-linux).
+> **On a Mac or on Linux?** Those builds are **paused from 2.7.0** — **v2.6.2** is the last one for them and it stays up. See [🍎 macOS](#-macos--paused-after-262) and [🐧 Linux](#-linux).
 
 ### Windows
 
 1. Go to **[Releases](../../releases)** and download `Velo-win.zip`.
-2. Extract the folder anywhere.
+2. Extract the folder somewhere normal — **Documents** or your Desktop.
 3. Open **`Velo.exe`**.
+
+> **Don't run it from inside the zip, from OneDrive, or from Program Files.** Velo needs to write its own data folder next to itself, and in those three places Windows won't let it — you get a black window and nothing else. Extracting it properly is the fix.
 
 Requires **Windows 10/11** with the **WebView2 Runtime** (already bundled in up-to-date Windows; if missing, Windows Update installs it, or grab it free from Microsoft).
 
@@ -181,6 +196,8 @@ Velo automatically removes the "downloaded from the internet" mark from its own 
 </details>
 
 ## 🐧 Linux
+
+> **Paused from 2.7.0.** Nearly everyone using Velo is on Windows, and keeping three builds properly tested costs time that's better spent on the app itself. **v2.6.2 is the last Linux release** and it stays up — everything below still applies to it. If Linux ever gets a real crowd here, the builds come back.
 
 Velo runs on Linux too — **Fedora, Ubuntu/Debian, Arch, openSUSE**. It uses your system's WebKit (the reliable way — no fragile bundled browser), so it's a quick one-time setup in a terminal:
 
@@ -201,7 +218,9 @@ Two more things that release fixed: the bug that **heated laptops** (Velo was di
 
 > Two honest limits. A game written as a **native Wayland client** still can't receive synthetic keys from anything — ask it to run on X11 instead (SDL games take `SDL_VIDEODRIVER=x11`; for Sober: `flatpak run --env=SDL_VIDEODRIVER=x11 org.vinegarhq.Sober`). And **velocity / Expression don't reach the game on Linux** — that path can't send the modifier timing the game needs.
 
-## 🍎 macOS — **beta, and it needs your reports**
+## 🍎 macOS — **paused after 2.6.2**
+
+> **Paused from 2.7.0.** The Mac build never got confirmed doing the one thing Velo is actually for — playing into a game — and shipping something nobody can stand behind is worse than not shipping it. **v2.6.2 is the last macOS release** and stays up; everything below still applies to it. If the Mac ever gets a real crowd here, it comes back properly tested.
 
 Velo runs on macOS from 2.5.2. **This is the first public build for the Mac and it is openly a test:** every other platform got years of members finding things; this one has had none. It is here so that can start.
 
@@ -312,7 +331,7 @@ The idea: route Velo's piano sound into your virtual "microphone".
 
 **Windows** — download `Velo-win.zip` from [Releases](../../releases), extract it anywhere, run `Velo.exe`. Nothing to install.
 
-**macOS** *(beta)* — download `Velo-mac-AppleSilicon.dmg` or `Velo-mac-Intel.dmg`, **drag Velo into Applications before opening it**, then follow the permission steps in the [🍎 macOS](#-macos--beta-and-it-needs-your-reports) section.
+**macOS** *(beta)* — download `Velo-mac-AppleSilicon.dmg` or `Velo-mac-Intel.dmg`, **drag Velo into Applications before opening it**, then follow the permission steps in the [🍎 macOS](#-macos--paused-after-262) section.
 
 **Linux** — download `velo-linux.tar.gz`, extract, run `./install-linux.sh` (see the [🐧 Linux](#-linux) section). To run it in place without installing, `./run-linux.sh`.
 
