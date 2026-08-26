@@ -34,6 +34,16 @@
 > - **Antivirus deleted a file and Velo won't open?** → restore it from quarantine (commonly `Velo\_internal\pythonnet\runtime\Python.Runtime.dll`) and add the Velo folder as an exception.
 > - **Still blocked?** → right-click the `.zip` → **Properties** → tick **Unblock** → extract again.
 
+## Velo 2.7.1 — Fixes
+
+A maintenance release. Bugs members reported, and a few more found while looking for them.
+
+- 🎹 **Chords stopped rolling.** ob4r spotted this one and traced it himself: sending the velocity level was splitting a chord apart, so the notes arrived one after another instead of together. A chord now takes the level of its loudest note and leaves in one piece.
+- ♻️ **Reset Velo** *(Settings › Library)* — puts the app back to how it arrives: no songs, no background, default colours and hotkeys. Everything it removes goes to the Recycle Bin, so it is undoable.
+- 🔇 **Sound off is silent everywhere.** With the sound monitor off, the Guide and the Stage were each still playing notes of their own — and with a MIDI port selected, Velo's piano was doubling every note the port played.
+- 🎨 **The letter sheet keeps its colours.** Rhythm · Hands · Plain, and **Save** writes the HTML in the mode you are looking at instead of always Rhythm.
+- 🎛️ **Smaller ones:** Practice can reach a MIDI port, port names lost the number stuck to the end of them, and a note both hands play is marked for both.
+- ⌨️ **The console keeps talking** while Velo's own window is in front. Nothing gets typed there — that part is on purpose — but the log used to go quiet with it, and the app looked frozen.
 ## Velo 2.7.0 — Two hands, one of them yours
 
 Velo could always play a song for you. Now it can play *half* of one.
@@ -47,79 +57,22 @@ Velo could always play a song for you. Now it can play *half* of one.
 
 **Known limits, stated on purpose:** from this version on the **Linux and macOS builds are paused** — see the sections below. And three controls in here were quietly doing nothing before this release: the hand strip never listened to a click, Guide made no sound at all, and the Practice hand buttons died in Free play. If something in Velo looks like it should work and doesn't, saying so on the Discord is what gets it found.
 
-## Velo 2.6.0 - Sheet music, straight into your library
-
-The biggest release Velo has had, and one feature carries it.
-
-- 🎼 **MuseScore now lands in your library.** Open the MIDI Hub, pick **MuseScore**, search a song or paste a score link - and it's yours, ready to play. No browser, no downloader site, no account. You can **browse** it too, by instrument and difficulty, with the difficulty and the length on the card before you commit to anything. And every score somebody brings in is **shared**, so the next person to want it gets it instantly rather than fetching it again.
-- 🎚️ **Tracks stopped hiding.** Choosing which tracks play is a feature Velo has had for months, and people kept asking for it - because the control only appeared *after* you pressed Play, and the song Velo restores on startup never got one at all. Whoever opened the app looking for it met the one case where it was reliably absent. It's there from the moment a song loads now, and when there is nothing to split it says so instead of vanishing.
-- 🎥 **Recording-friendly mode.** Some recorders and capture cards cannot see a GPU-drawn window and record a black box where Velo should be. This draws on the CPU instead. Settings -> Appearance. *(Windows only.)*
-- ✨ **The visualizer runs smooth.** Five separate causes of stutter, all fixed - the worst being that the clock ran while the file was still being parsed, which is the *"the first song after opening always freezes"* people reported. Colours are one per track now, read from the file itself.
-- 🍎 **macOS got its hotkeys back.** The one that matters isn't play/pause - it's **Panic**, your way out when a key sticks in a game you can't type in. And ⌘Q no longer walks away with your keys still held down.
-- 🔧 **Two arrangements of the same song no longer overwrite each other.** They shared a filename, so the first one silently disappeared. Files are named by arranger now.
-
-**Known limits, stated on purpose:** macOS is still a public beta - drag Velo to Applications *before* you open it the first time, because permissions are tied to where it lives. And on macOS and Linux a non-US keyboard layout can play the wrong note: Velo types by character there, where the Windows path types by key position. The app now tells you so in Settings -> Playing.
-
-## Velo 2.5.2 — Velo runs on Mac, and four bugs members found
-
-**🍎 macOS is here.** Native builds for Apple Silicon and Intel, with the permission setup macOS demands handled for you instead of left as homework. It's an **open beta** and we say so plainly: every other platform got years of people finding things, and this one has had none. See the [macOS section](#-macos--paused-after-262) below — and if something's off, please open a **ticket on the Discord server**.
-
-The four fixes, all reported by members:
-
-- 🎹 **A MIDI keyboard was sending a burst of extra keystrokes on every note.** Velo changes the game's velocity level with a key combination, and with a MIDI keyboard it was sending that combination on *every* note instead of only when the dynamic actually changed — 160 keystrokes where 4 were needed. Without the gaps between them the game reads the level key as an ordinary note: the setting did nothing **and** a wrong note played. That's the noise, and the two notes at once. QWERTY was never affected, which is exactly why it looked like a hardware problem.
-- 🔇 **MIDI → Keys could type the piano into whatever window was focused.** The guard that keeps notes inside the game was only wired to the autoplayer. Live MIDI input runs in the background all the time, so alt-tabbing to Discord mid-song sent the notes there.
-- 👻 **Half the Player could vanish when you came back to Velo.** The file card and the transport row were only visible because an entrance animation finished. An animation that never ran meant an element gone for good, and the only cure was switching tabs and back. Nothing in Velo depends on an animation finishing to be visible any more.
-- ⏸️ **The Queue could show a song playing when nothing was.** If the playback thread hit an error it died silently, and Velo went on believing the song was still going. Worse: the same routine is what releases held keys, so a crash mid-chord could leave a key pressed down inside the game. Now it reports what happened, recovers, and lets go of the keys.
-
-Plus: Stream mode works on macOS, and `velo --doctor` now prints what your copy of Velo can actually do on your machine.
-
-## Velo 2.5.1 — Put back what a scan moved
-
-Velo Scan finds the MIDIs already on your PC and adds them to your library. Adding **moves** the files — deliberately, so a song doesn't end up sitting on your disk twice. The problem was what came after: Velo only remembered where each file came from until you closed the app. Reopen it the next day, find the folders you'd spent years organising empty, hit Undo, and there was nothing left to undo with.
-
-Nothing was ever deleted. But "it's all still there, somewhere in one flat folder" is not much comfort when you had it sorted by composer.
-
-- 📦 **Put back** *(Settings › Library)* — a list of every song a scan moved and the folder each one goes back to. Tick what you want; not the whole import, just what you pick. It works months later, and it survives restarts and updates.
-- 🗑️ **The Trash could delete the wrong song.** Removing two songs within a moment of each other gave them the same internal id, so **Delete forever** — the one button in Velo that really deletes a file — could take the song you hadn't selected. If your Trash already holds a pair like that, Velo repairs it on startup.
-
-> ⚠️ Velo's library is **one flat folder**, and your own subfolders aren't recreated inside it. If you've sorted your MIDIs into folders you care about, keep a copy before you scan. Put back will rebuild them, but a copy costs you nothing.
-
-## Velo 2.5 — The engine, rebuilt
-
-The biggest change to how Velo *plays* since it existed — and almost none of it is a new button. Velo looks the same, and then it plays, and you can hear the difference.
-
-**Four things were quietly broken the whole time.** Not features that were missing: features that were **there, switched on, and doing nothing.**
-
-- 🎹 **Chords land together.** A five-note chord was five separate trips into the operating system, one key at a time, and anything that happened in between — the browser waking up, a frame being painted — spread it out. You heard a rolled chord you never asked for. The whole chord now leaves in **one call**.
-- ⏱️ **The clock was rounding every note onto a 15 ms grid**, before anything else had a chance to go wrong. To put that in scale: a sixteenth note at 120 BPM is 125 ms. Measured wait error went from **11 ms to 0.004 ms**.
-- 🔑 **Extended notes jammed keys in the game.** Notes past the main 61 keys are played with **Ctrl** held, and their release was being sent without it — so the game never ended the note and **the key stayed down**. Any song with a bass line below C2 could do it.
-- 🎚️ **Velocity never reached the game.** It reads Alt through a *delayed* callback; Velo sent Alt and the level key with no gap, so the flag wasn't set yet and the key was read as an ordinary note. Your dynamics did nothing — and spent four extra key events on **every note** doing it.
-
-**And new things to use:**
-
-- 🆘 **Panic — release all keys** (`Ctrl + Alt + P`, rebindable). Everything held — notes, Shift, Ctrl, Alt, the sustain pedal — lets go, **without leaving the game**. Before this, a stuck key meant finding Velo's window.
-- 🎭 **Expression** (`Off · Natural · Dramatic`) — dynamics taken from the music itself. Most MIDI has none at all, which is why playback can sound like a machine reading a list. Velo reads how busy the music is, where each note sits in its phrase and how the line rises and falls. *Only works on pianos that support velocity keybinds, so it ships off.*
-- 🔄 **Fold range** *(on)* — notes above or below the keyboard used to be **dropped in silence**. They're moved into reach instead: one octave at most, and never on top of a note already sounding.
-- 🎼 **Auto-fit key** *(off)* — the other answer to the same problem: move the **whole song** into a key that fits. Every interval survives, so it still sounds like the piece. Off by default, because transposing does change the key of something you know.
-- 🪟 **Stay in window** *(on)* — Velo learns where you played the first note and holds if you tab away, so a song can never get typed into your Discord chat. The song clock holds with it, so you come back where you left off — and Velo's own windows don't trigger it.
-- 📚 **Playlists** — named sets of your songs, each in its own order (a full FNAF list in chronological order, a practice set), without disturbing anything else. Drag a song onto a tab, or use **Add songs**. Next, previous, shuffle, the end-of-song advance and the floating **Select Music** window all follow the open playlist.
-- 🗑️ **A Trash** — removing a song used to un-happen at the next launch, because Velo re-reads its Midis folder on startup and nothing recorded that you meant it. Removed songs now move to **Velo/Trash**, a real folder you can open, and the Trash button puts them back. Adding a song that's already in the trash restores it instead of leaving you a working copy and a twin in the bin.
-- 🎹 **Octaves ×1–×5**, 🎚️ **per-track mute**, and ✨ **Flourish** — a run across the whole keyboard on demand, for when someone in chat says you're autoplaying. Three of them, and bindable to a key.
-- 🎛️ **A MIDI keyboard that gets unplugged** is waited for and reopened instead of going deaf in silence — and whatever it was holding is released, not left down in the game.
-
-🐧 **Linux got fixed properly** — see the [Linux section](#-linux) below.
-
 ## Earlier releases
 
 <details>
-<summary><b>What landed in v2.4 → v1.8</b></summary>
+<summary><b>What landed in v2.6.2 → v1.8</b></summary>
 
-- **v2.4 — Your setup, your rules:** **song key-binds** (bind a queued song to one key and trigger it from anywhere), **stream mode** (hide Velo from OBS, screen-share and screenshots while it stays visible to you), **bring your own soundfont** (`.sf2` / `.sf3`, without bloating the app), and friendlier guidance for sending MIDI to a DAW or plugin through loopMIDI. **v2.4.1** then went over Practice: a **Sustain** toggle for Free play, **Sheet** coloured by how you actually played each note and openable **fullscreen**, **Step** rebuilt on the same canvas as the other modes, and the piano filling the screen properly.
-
-- **v2.3 — 24 sounds:** grand, bright and electric pianos, Rhodes/FM, harpsichord, clavinet, celesta, music box, vibraphone, marimba, organs and more, all in **Settings → Playing → Sound** (core pianos offline; the rest stream and cache on first use).
-- **v2.2 — Play with feeling:** **QWERTY velocity** (computer-keyboard notes respond to *how* you play, and it drives the visualizer's brightness) and an optional **sustain pedal (Space)** so keyboard Free play feels like a real piano. Both in **Settings → Playing**, off by default.
-- **v2.1 — the Visualizer:** the falling-notes view became a tunable light show — 10 scene wallpapers, real effects (glow, particles, shockwaves, streaklets, chord-reactive bloom), a **rainbow** mode, your own note & saber colors, darken/blur/vignette, and an **auto-hiding gear** with one-click presets. Measured to stay at 60fps, and it drives **Practice → Free play and Rhythm** too, not just Stage.
-- **v2.0 — Compose:** a full built-in **piano-roll editor** (record, paste a sheet, import a MIDI or draw notes; save a `.mid`, export a sheet, or publish to the library — also at **[velomidi.com/compose](https://velomidi.com/compose)**), a **unified MIDI-input layer** so your keyboard works the same in Practice / MIDI → Keys / Compose, an **expandable mini-player**, and **update-safe data** so your songs, backgrounds and settings survive an update.
+- **v2.6.2 — the Practice play key** now sounds on Practice's own piano, three MuseScore import bugs fixed, and the floating helpers stop showing through on Linux.
+- **v2.6.1 — searching the library bar** stopped skipping playback: seeking asked for a note and got silence, because the engine read the jump forward as being late.
+- **v2.6.0 — MuseScore, straight into your library:** search a song or paste a score link and it is yours — no browser, no downloader site, no account. Track muting stopped hiding until after Play, a **recording-friendly mode** for capture cards that record a black window, five separate causes of visualizer stutter fixed, macOS hotkeys rebuilt, and two arrangements of one song no longer overwrite each other.
+- **v2.5.2 — Velo runs on Mac, and four bugs members found:** a MIDI keyboard sending 160 keystrokes where 4 were needed, MIDI → Keys typing into whatever window was focused, half the Player vanishing when you came back, and the Queue showing a song playing when the thread had died. Also `velo --doctor`.
+- **v2.5.1 — Put back what a scan moved:** Velo Scan *moves* files, and only remembered where they came from until you closed the app. There is a **Put back** list now that survives restarts — and the Trash stopped being able to delete the wrong song.
+- **v2.5 — the engine, rebuilt:** chords leaving in **one call** instead of one key at a time, the clock's rounding error down from **11 ms to 0.004 ms**, extended notes no longer jamming keys in the game, and velocity finally reaching it at all. Plus **Panic**, **Expression**, **Fold range**, **Auto-fit key**, **Stay in window**, **Playlists**, a real **Trash**, octaves ×1–×5, per-track mute and **Flourish**.
+- **v2.4 — your setup, your rules:** song key-binds, stream mode (hidden from OBS, screen-share and screenshots), bring your own soundfont, and friendlier guidance for sending MIDI to a DAW through loopMIDI. **v2.4.1** then went over Practice: a **Sustain** toggle for Free play, **Sheet** coloured by how you actually played each note and openable fullscreen, and **Step** rebuilt on the same canvas as the other modes.
+- **v2.3 — 24 sounds:** grand, bright and electric pianos, Rhodes/FM, harpsichord, clavinet, celesta, music box, vibraphone, marimba, organs and more.
+- **v2.2 — play with feeling:** QWERTY velocity, and an optional sustain pedal on Space.
+- **v2.1 — the Visualizer:** 10 scene wallpapers, glow, particles, shockwaves, rainbow mode, your own note and saber colours, and one-click presets — at 60fps, in Stage *and* Practice.
+- **v2.0 — Compose:** a full built-in piano-roll editor (also at **[velomidi.com/compose](https://velomidi.com/compose)**), a unified MIDI-input layer, an expandable mini-player, and update-safe data.
 - **v1.9 — Velo Scan:** find the MIDIs already on your PC and import them, grouped by folder, no duplicates, undoable.
 - **v1.8.2:** 9 keyboard-sound models, searchable dropdowns and a tabbed Settings redesign.
 
