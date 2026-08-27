@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows-1c1c23?style=flat-square" />
-  <img src="https://img.shields.io/badge/version-v2.7.2-c8ff4d?style=flat-square&labelColor=1c1c23" />
+  <img src="https://img.shields.io/badge/version-v2.7.3-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/license-Proprietary-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/made%20by-brenu-1c1c23?style=flat-square" />
 </p>
@@ -35,6 +35,20 @@ Velo started because playing MIDI meant using software that looked like it was w
 > - Antivirus deleted a file → restore it from quarantine (usually `Velo\_internal\pythonnet\runtime\Python.Runtime.dll`) and add the Velo folder as an exception
 > - Still blocked → right-click the `.zip` → **Properties** → tick **Unblock** → extract again
 
+## Velo 2.7.3
+
+One fix, and it came from Henrique noticing something I had measured wrong.
+
+- **The animated background stopped juddering.** The drift is deliberately not
+  redrawn sixty times a second — doing that used to burn an entire CPU core with
+  the app sitting idle. The problem was the replacement: it stepped on a fixed
+  clock, five times a second, and each step jumped up to 2.4 px on a 1080p
+  screen and more on a bigger one. The comment in the code claimed those steps
+  were a fifth of that size, and the test that was supposed to catch it repeated
+  the same wrong arithmetic. It now paces itself by how far the layer actually
+  moved, so no step crosses a single pixel, and it costs a fraction of what
+  redrawing everything would.
+
 ## Velo 2.7.2
 
 All Practice this time.
@@ -46,20 +60,12 @@ All Practice this time.
 
 Almost all of this came from Yami, who kept picking at Practice until it made sense.
 
-## Velo 2.7.1 — Fixes
-
-- **Chords stopped rolling.** ob4r spotted this one and traced it himself: sending the velocity level was splitting a chord apart, so the notes arrived one after another. A chord now takes the level of its loudest note and leaves in one piece.
-- **Reset Velo** (*Settings → Library*) puts the app back to how it arrives: no songs, no background, default colours and hotkeys. Everything it removes goes to the Recycle Bin, so it's undoable.
-- **Sound off is silent everywhere.** With the monitor off, the Duet and the Stage were still playing notes of their own — and with a MIDI port selected, Velo's piano was doubling every note the port played.
-- **The letter sheet keeps its colours.** Rhythm, Hands or Plain, and **Save** writes the HTML in the mode you're looking at.
-- Smaller ones: Practice can reach a MIDI port, port names lost the number stuck on the end, and a note both hands play is marked for both.
-- **The console keeps talking** while Velo's own window is in front. Nothing gets typed there — that part is on purpose — but the log used to go quiet with it, and the app looked frozen.
-
 ## Earlier releases
 
 <details>
-<summary><b>What landed in v2.7.0 → v1.8</b></summary>
+<summary><b>What landed in v2.7.1 → v1.8</b></summary>
 
+- **v2.7.1 — fixes:** chords stopped rolling (sending the velocity level was splitting them apart), **Reset Velo** in Settings, sound off finally silent everywhere, the letter sheet keeping its colours through **Save**, Practice reaching a MIDI port, and the console no longer going quiet while Velo's own window is in front.
 - **v2.7.0 — two hands, one of them yours.** Play one hand and let Velo play the other; save your whole setup as a **Config** and share it with a code; Velo learned to read **your keyboard's layout** instead of assuming a US one (on a German keyboard the autoplayer had been sending y and z swapped, in every build, for everyone); **Practice can play out through a MIDI port**; **Transcribe** became a tab; Settings was rebuilt into five tabs. It also stopped eating a whole CPU core while sitting idle. From this version on, **Windows is the only platform** — see the Linux and macOS sections.
 - **v2.6.2** — the Practice play key sounds on Practice's own piano, three MuseScore import bugs fixed, and the floating helpers stop showing through on Linux.
 - **v2.6.1** — searching the library bar stopped skipping playback: seeking asked for a note and got silence, because the engine read the jump forward as being late.
