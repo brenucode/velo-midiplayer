@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows-1c1c23?style=flat-square" />
-  <img src="https://img.shields.io/badge/version-v2.7.3-c8ff4d?style=flat-square&labelColor=1c1c23" />
+  <img src="https://img.shields.io/badge/version-v2.7.4-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/license-Proprietary-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/made%20by-brenu-1c1c23?style=flat-square" />
 </p>
@@ -35,6 +35,32 @@ Velo started because playing MIDI meant using software that looked like it was w
 > - Antivirus deleted a file → restore it from quarantine (usually `Velo\_internal\pythonnet\runtime\Python.Runtime.dll`) and add the Velo folder as an exception
 > - Still blocked → right-click the `.zip` → **Properties** → tick **Unblock** → extract again
 
+## Velo 2.7.4
+
+Configs — the half of it I got wrong when I built it.
+
+- **You can take a published config down.** Publishing was one-way: once it was
+  up there was no way to make it private again, and Delete only removed your own
+  copy while the published one stayed in the gallery. Since the last update
+  staff could take yours down and you still couldn't. A published card now has
+  **Who sees it**, with **Take down** inside it.
+- **The gallery had a second page all along and never showed it.** It stopped at
+  the 24th config, quietly.
+- **Deleting a config asks first.** One click threw away the setup and the
+  background picture saved with it, with nothing to undo it — while the button
+  staff use to remove somebody else's has been asking all along.
+- **A config you haven't published says so.** People went hunting for a share
+  code on a config that only ever existed on their own PC, and nothing on the
+  card said why there wasn't one. It also stops calling the button Publish when
+  what it opens is the choice of who sees it.
+- When the site turns a publish down, the reason now stays on screen with the
+  link out of it, instead of fading away after two seconds.
+- The page you land on after signing in with Discord told you to go back to Velo
+  Compose. Configs and Transcribe use that page too.
+
+Maestro carries 67 configs in the cloud and 67 publishes a day now. That one is
+on the site, so it's already live whatever version you're on.
+
 ## Velo 2.7.3
 
 One fix, and it came from Henrique noticing something I had measured wrong.
@@ -49,22 +75,12 @@ One fix, and it came from Henrique noticing something I had measured wrong.
   moved, so no step crosses a single pixel, and it costs a fraction of what
   redrawing everything would.
 
-## Velo 2.7.2
-
-All Practice this time.
-
-- **Arrange came back when you play with a MIDI keyboard.** It used to disappear the moment you switched Input to MIDI, which left you stuck on Faithful — the hardest one — with no way out. Faithful, Balanced and Easy are all there now, whatever you're playing with.
-- **Finishing a sheet actually finishes it.** The bar used to fill up one note before the end, and after the last note the sheet just sat there. Now the last note takes it to 100%, and a moment later the sheet comes back ready from the top.
-- **The MIDI output was findable only if you already knew where it was.** It lives in the Sound picker, but nothing on the bar said "output", so the ports sat in the list looking like more instruments. There's a heading over them now, and the Sound label reads "Sound / Output" while you're on MIDI input.
-- **Practice sharps: Shift or No Shift** (*Settings → Controls → Keyboard*). Shift is how the game really works, so it stays the default. No Shift writes the sheet in lowercase and lets the plain key count, which makes the awkward stretches much easier. Same note either way, and copied or saved sheets don't change.
-
-Almost all of this came from Yami, who kept picking at Practice until it made sense.
-
 ## Earlier releases
 
 <details>
-<summary><b>What landed in v2.7.1 → v1.8</b></summary>
+<summary><b>What landed in v2.7.2 → v1.8</b></summary>
 
+- **v2.7.2 — all Practice.** Arrange came back when you play with a MIDI keyboard (switching Input to MIDI used to strand you on Faithful, the hardest one), finishing a sheet actually finishes it, the MIDI output got a heading so the ports stopped looking like more instruments, and **Practice sharps: Shift or No Shift**. Almost all of it came from Yami, who kept picking at Practice until it made sense.
 - **v2.7.1 — fixes:** chords stopped rolling (sending the velocity level was splitting them apart), **Reset Velo** in Settings, sound off finally silent everywhere, the letter sheet keeping its colours through **Save**, Practice reaching a MIDI port, and the console no longer going quiet while Velo's own window is in front.
 - **v2.7.0 — two hands, one of them yours.** Play one hand and let Velo play the other; save your whole setup as a **Config** and share it with a code; Velo learned to read **your keyboard's layout** instead of assuming a US one (on a German keyboard the autoplayer had been sending y and z swapped, in every build, for everyone); **Practice can play out through a MIDI port**; **Transcribe** became a tab; Settings was rebuilt into five tabs. It also stopped eating a whole CPU core while sitting idle. From this version on, **Windows is the only platform** — see the Linux and macOS sections.
 - **v2.6.2** — the Practice play key sounds on Practice's own piano, three MuseScore import bugs fixed, and the floating helpers stop showing through on Linux.
