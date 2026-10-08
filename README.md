@@ -43,7 +43,7 @@ A few things from the server this time.
 - Octaves got a little gear. Hover over it and you can give each octave its own delay, so the extra notes don't all land at the same instant.
 - Some of you had your hotkeys and song hotkeys go back to default after an update. That's fixed, and trying someone else's config doesn't touch your hotkeys anymore either.
 
-The octave delay was tigujuAP's idea. Thanks for sending these in!
+The octave delay was tiguju's idea. Thanks for sending these in!
 
 ## Velo 2.7.6
 
