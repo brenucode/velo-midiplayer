@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows-1c1c23?style=flat-square" />
-  <img src="https://img.shields.io/badge/version-v2.7.6-c8ff4d?style=flat-square&labelColor=1c1c23" />
+  <img src="https://img.shields.io/badge/version-v2.7.7-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/license-Proprietary-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/made%20by-brenu-1c1c23?style=flat-square" />
 </p>
@@ -35,6 +35,16 @@ Velo started because playing MIDI meant using software that looked like it was w
 > - Antivirus deleted a file → restore it from quarantine (usually `Velo\_internal\pythonnet\runtime\Python.Runtime.dll`) and add the Velo folder as an exception
 > - Still blocked → right-click the `.zip` → **Properties** → tick **Unblock** → extract again
 
+## Velo 2.7.7
+
+A few things from the server this time.
+
+- The Queue can be sorted now: A–Z, newest or oldest. It works inside playlists too, and the list plays in the order you pick.
+- Octaves got a little gear. Hover over it and you can give each octave its own delay, so the extra notes don't all land at the same instant.
+- Some of you had your hotkeys and song hotkeys go back to default after an update. That's fixed, and trying someone else's config doesn't touch your hotkeys anymore either.
+
+The octave delay was tigujuAP's idea. Thanks for sending these in!
+
 ## Velo 2.7.6
 
 Small one, mostly fixes.
@@ -45,23 +55,12 @@ Small one, mostly fixes.
 
 The search one was reported in the server, thanks!
 
-## Velo 2.7.5
-
-This one's mostly about making Velo lighter.
-
-- New Expression option: **Melodic**. Left hand plays softer so the melody stands out.
-- MuseScore songs were way heavier than they needed to be. They come full of stuff the game never uses, and Velo was carrying all of it. The worst one in my library went from 800 MB of RAM to about 100, and from 71% of a CPU core to 6% while playing.
-- With Sustain on, Velo was pressing Space all the time on some MuseScore songs, even ones with no pedal. Fixed, and the same thing on MIDI keyboards (the mod wheel was pressing the pedal).
-- Velocity changes happen before the note now, so notes don't come in late anymore.
-- A few MuseScore import fixes: downloads failing with "not a MIDI" (almost always with an ad blocker on), importing breaking if you closed the helper window, and "Load more" showing the same songs again.
-
-Melodic was a suggestion from the server, thanks!
-
 ## Earlier releases
 
 <details>
-<summary><b>What landed in v2.7.4 → v1.8</b></summary>
+<summary><b>What landed in v2.7.5 → v1.8</b></summary>
 
+- **v2.7.5** — Melodic, MuseScore songs got a lot lighter, Sustain stopped pressing Space on its own, and there's an installer now.
 - **v2.7.4** — you can take a published config down, the config gallery shows past the 24th one, and deleting a config asks first.
 - **v2.7.3** — the animated background stopped juddering. It stepped on a fixed clock and jumped up to 2.4 px a step; it now paces itself by how far the layer actually moved. Henrique noticed it.
 - **v2.7.2 — all Practice.** Arrange came back when you play with a MIDI keyboard (switching Input to MIDI used to strand you on Faithful, the hardest one), finishing a sheet actually finishes it, the MIDI output got a heading so the ports stopped looking like more instruments, and **Practice sharps: Shift or No Shift**. Almost all of it came from Yami, who kept picking at Practice until it made sense.
