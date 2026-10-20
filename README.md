@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows-1c1c23?style=flat-square" />
-  <img src="https://img.shields.io/badge/version-v2.7.7-c8ff4d?style=flat-square&labelColor=1c1c23" />
+  <img src="https://img.shields.io/badge/version-v2.7.8-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/license-Proprietary-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/made%20by-brenu-1c1c23?style=flat-square" />
 </p>
@@ -35,6 +35,15 @@ Velo started because playing MIDI meant using software that looked like it was w
 > - Antivirus deleted a file → restore it from quarantine (usually `Velo\_internal\pythonnet\runtime\Python.Runtime.dll`) and add the Velo folder as an exception
 > - Still blocked → right-click the `.zip` → **Properties** → tick **Unblock** → extract again
 
+## Velo 2.7.8
+
+Two new things from the server.
+
+- **Keep playing**: when a song ends, the next one in your list starts on its own. Hover it and click the gear to pick the time between songs, or go below zero and the next one starts before the current ends.
+- New Expression mode, **Bass**. Basically Melodic flipped: the left hand leads and the melody sits under it.
+
+Thanks for the ideas!
+
 ## Velo 2.7.7
 
 A few things from the server this time.
@@ -45,21 +54,12 @@ A few things from the server this time.
 
 The octave delay was tiguju's idea. Thanks for sending these in!
 
-## Velo 2.7.6
-
-Small one, mostly fixes.
-
-- Searching in Select Music lagged a bit and the mouse cursor kept flickering. Fixed.
-- The first time you opened Select Music it could sit empty for a while (16 seconds with my library). Now it's a few seconds.
-- Some MuseScore songs showed up as 2 or 3 hours long and played random notes at the end. The files have a broken glissando inside, and Velo reads them right now.
-
-The search one was reported in the server, thanks!
-
 ## Earlier releases
 
 <details>
-<summary><b>What landed in v2.7.5 → v1.8</b></summary>
+<summary><b>What landed in v2.7.6 → v1.8</b></summary>
 
+- **v2.7.6** — Select Music search stopped lagging, its first open got way faster, and MuseScore songs with a broken glissando play right.
 - **v2.7.5** — Melodic, MuseScore songs got a lot lighter, Sustain stopped pressing Space on its own, and there's an installer now.
 - **v2.7.4** — you can take a published config down, the config gallery shows past the 24th one, and deleting a config asks first.
 - **v2.7.3** — the animated background stopped juddering. It stepped on a fixed clock and jumped up to 2.4 px a step; it now paces itself by how far the layer actually moved. Henrique noticed it.
