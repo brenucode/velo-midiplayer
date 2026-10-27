@@ -46,7 +46,7 @@ Two ideas from the server, and a couple of fixes that came along with them.
 
 Fix mistakes starts off. To make it sound natural, go to Settings → Playing → Random Fail, keep Wrong notes low (1 or 2 is plenty) and start with Go back at about a second. It fixes one mistake every 20 seconds at most and plays through the rest, so with Wrong notes high it just sounds like someone having a rough day.
 
-Fix mistakes was Gabe's idea. Thanks for these!
+Fix mistakes was Sazuo's idea. Thanks for these!
 
 ## Velo 2.7.8
 
