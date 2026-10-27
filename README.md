@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows-1c1c23?style=flat-square" />
-  <img src="https://img.shields.io/badge/version-v2.7.8-c8ff4d?style=flat-square&labelColor=1c1c23" />
+  <img src="https://img.shields.io/badge/version-v2.7.9-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/license-Proprietary-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/made%20by-brenu-1c1c23?style=flat-square" />
 </p>
@@ -35,6 +35,19 @@ Velo started because playing MIDI meant using software that looked like it was w
 > - Antivirus deleted a file → restore it from quarantine (usually `Velo\_internal\pythonnet\runtime\Python.Runtime.dll`) and add the Velo folder as an exception
 > - Still blocked → right-click the `.zip` → **Properties** → tick **Unblock** → extract again
 
+## Velo 2.7.9
+
+Two ideas from the server, and a couple of fixes that came along with them.
+
+- Songs have **parts** now. There's a mark on the seek bar where each one starts, and clicking it jumps there. If the MIDI doesn't have any, Velo guesses them from the notes, and you can mark your own with **+ Mark here**. The mini-player shows them too.
+- New in Random Fail: **Fix mistakes**. After a wrong note, Velo stops, goes back a little and plays it again, right this time. You choose how far back, anywhere from 0.1 to 8 seconds.
+- Wrong notes land on the key next to the right one now, not anywhere up to an octave away.
+- Jumping into the middle of a song used to leave the sustain pedal up until the file pressed it again. It comes back right away now.
+
+Fix mistakes starts off. To make it sound natural, go to Settings → Playing → Random Fail, keep Wrong notes low (1 or 2 is plenty) and start with Go back at about a second. It fixes one mistake every 20 seconds at most and plays through the rest, so with Wrong notes high it just sounds like someone having a rough day.
+
+Fix mistakes was Gabe's idea. Thanks for these!
+
 ## Velo 2.7.8
 
 Two new things from the server.
@@ -44,21 +57,12 @@ Two new things from the server.
 
 Thanks for the ideas!
 
-## Velo 2.7.7
-
-A few things from the server this time.
-
-- The Queue can be sorted now: A–Z, newest or oldest. It works inside playlists too, and the list plays in the order you pick.
-- Octaves got a little gear. Hover over it and you can give each octave its own delay, so the extra notes don't all land at the same instant.
-- Some of you had your hotkeys and song hotkeys go back to default after an update. That's fixed, and trying someone else's config doesn't touch your hotkeys anymore either.
-
-The octave delay was tiguju's idea. Thanks for sending these in!
-
 ## Earlier releases
 
 <details>
-<summary><b>What landed in v2.7.6 → v1.8</b></summary>
+<summary><b>What landed in v2.7.7 → v1.8</b></summary>
 
+- **v2.7.7** — the Queue can be sorted (A–Z, newest, oldest), each octave can get its own delay, and hotkeys stopped going back to default after an update. The octave delay was tiguju's idea.
 - **v2.7.6** — Select Music search stopped lagging, its first open got way faster, and MuseScore songs with a broken glissando play right.
 - **v2.7.5** — Melodic, MuseScore songs got a lot lighter, Sustain stopped pressing Space on its own, and there's an installer now.
 - **v2.7.4** — you can take a published config down, the config gallery shows past the 24th one, and deleting a config asks first.
