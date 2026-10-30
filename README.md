@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows-1c1c23?style=flat-square" />
-  <img src="https://img.shields.io/badge/version-v2.7.9-c8ff4d?style=flat-square&labelColor=1c1c23" />
+  <img src="https://img.shields.io/badge/version-v2.7.10-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/license-Proprietary-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/made%20by-brenu-1c1c23?style=flat-square" />
 </p>
@@ -35,6 +35,19 @@ Velo started because playing MIDI meant using software that looked like it was w
 > - Antivirus deleted a file → restore it from quarantine (usually `Velo\_internal\pythonnet\runtime\Python.Runtime.dll`) and add the Velo folder as an exception
 > - Still blocked → right-click the `.zip` → **Properties** → tick **Unblock** → extract again
 
+## Velo 2.7.10
+
+This one's all about the MIDI Hub.
+
+- New **All** library. One search goes through nanoMIDI, BitMidi, Online Sequencer and MuseScore at once, and it's what the Hub opens on now.
+- You can listen before you download. Hit ▶ on any song and a little player shows up at the bottom. If you like it, downloading keeps that same file.
+- Songs without a cover show the song itself now, drawn from its notes. The player bar too, so you can see where it gets busy before skipping there.
+- Online Sequencer search had been coming back empty for months. It works again.
+- MuseScore songs from our archive were quietly blocked for everyone. They're back, and they load fast.
+- The updater only installs Velo's own releases now, and checks the file before touching anything.
+
+The first time you search Online Sequencer or MuseScore, their window might flash for a second. That's them checking you're human, it goes away on its own.
+
 ## Velo 2.7.9
 
 Two ideas from the server, and a couple of fixes that came along with them.
@@ -48,20 +61,12 @@ Fix mistakes starts off. To make it sound natural, go to Settings → Playing �
 
 Fix mistakes was Sazuo's idea. Thanks for these!
 
-## Velo 2.7.8
-
-Two new things from the server.
-
-- **Keep playing**: when a song ends, the next one in your list starts on its own. Hover it and click the gear to pick the time between songs, or go below zero and the next one starts before the current ends.
-- New Expression mode, **Bass**. Basically Melodic flipped: the left hand leads and the melody sits under it.
-
-Thanks for the ideas!
-
 ## Earlier releases
 
 <details>
-<summary><b>What landed in v2.7.7 → v1.8</b></summary>
+<summary><b>What landed in v2.7.8 → v1.8</b></summary>
 
+- **v2.7.8** — **Keep playing** (the next song starts on its own, with the gap or overlap you pick) and a new Expression mode, **Bass**.
 - **v2.7.7** — the Queue can be sorted (A–Z, newest, oldest), each octave can get its own delay, and hotkeys stopped going back to default after an update. The octave delay was tiguju's idea.
 - **v2.7.6** — Select Music search stopped lagging, its first open got way faster, and MuseScore songs with a broken glissando play right.
 - **v2.7.5** — Melodic, MuseScore songs got a lot lighter, Sustain stopped pressing Space on its own, and there's an installer now.
