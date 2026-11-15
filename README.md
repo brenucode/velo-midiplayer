@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows-1c1c23?style=flat-square" />
-  <img src="https://img.shields.io/badge/version-v2.7.10-c8ff4d?style=flat-square&labelColor=1c1c23" />
+  <img src="https://img.shields.io/badge/version-v2.7.11-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/license-Proprietary-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/made%20by-brenu-1c1c23?style=flat-square" />
 </p>
@@ -35,6 +35,14 @@ Velo started because playing MIDI meant using software that looked like it was w
 > - Antivirus deleted a file → restore it from quarantine (usually `Velo\_internal\pythonnet\runtime\Python.Runtime.dll`) and add the Velo folder as an exception
 > - Still blocked → right-click the `.zip` → **Properties** → tick **Unblock** → extract again
 
+## Velo 2.7.11
+
+A fix for stream mode.
+
+- With **Hide from screen recordings** on, pressing your Show/Hide Velo key could bring Velo back as a black box in OBS or Discord. It stays invisible to recordings now, every time it comes back.
+
+Thanks streamproofer for reporting it, and for waiting!
+
 ## Velo 2.7.10
 
 This one's all about the MIDI Hub.
@@ -48,24 +56,12 @@ This one's all about the MIDI Hub.
 
 The first time you search Online Sequencer or MuseScore, their window might flash for a second. That's them checking you're human, it goes away on its own.
 
-## Velo 2.7.9
-
-Two ideas from the server, and a couple of fixes that came along with them.
-
-- Songs have **parts** now. There's a mark on the seek bar where each one starts, and clicking it jumps there. If the MIDI doesn't have any, Velo guesses them from the notes, and you can mark your own with **+ Mark here**. The mini-player shows them too.
-- New in Random Fail: **Fix mistakes**. After a wrong note, Velo stops, goes back a little and plays it again, right this time. You choose how far back, anywhere from 0.1 to 8 seconds.
-- Wrong notes land on the key next to the right one now, not anywhere up to an octave away.
-- Jumping into the middle of a song used to leave the sustain pedal up until the file pressed it again. It comes back right away now.
-
-Fix mistakes starts off. To make it sound natural, go to Settings → Playing → Random Fail, keep Wrong notes low (1 or 2 is plenty) and start with Go back at about a second. It fixes one mistake every 20 seconds at most and plays through the rest, so with Wrong notes high it just sounds like someone having a rough day.
-
-Fix mistakes was Sazuo's idea. Thanks for these!
-
 ## Earlier releases
 
 <details>
-<summary><b>What landed in v2.7.8 → v1.8</b></summary>
+<summary><b>What landed in v2.7.9 → v1.8</b></summary>
 
+- **v2.7.9** — songs have **parts** (marks on the seek bar, guessed from the notes if the MIDI has none), **Fix mistakes** in Random Fail, wrong notes land next to the right key, and the sustain pedal comes back right away after jumping into a song. Fix mistakes was Sazuo's idea.
 - **v2.7.8** — **Keep playing** (the next song starts on its own, with the gap or overlap you pick) and a new Expression mode, **Bass**.
 - **v2.7.7** — the Queue can be sorted (A–Z, newest, oldest), each octave can get its own delay, and hotkeys stopped going back to default after an update. The octave delay was tiguju's idea.
 - **v2.7.6** — Select Music search stopped lagging, its first open got way faster, and MuseScore songs with a broken glissando play right.
