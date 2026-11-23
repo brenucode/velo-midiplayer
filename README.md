@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows-1c1c23?style=flat-square" />
-  <img src="https://img.shields.io/badge/version-v2.7.11-c8ff4d?style=flat-square&labelColor=1c1c23" />
+  <img src="https://img.shields.io/badge/version-v2.7.12-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/license-Proprietary-c8ff4d?style=flat-square&labelColor=1c1c23" />
   <img src="https://img.shields.io/badge/made%20by-brenu-1c1c23?style=flat-square" />
 </p>
@@ -35,6 +35,11 @@ Velo started because playing MIDI meant using software that looked like it was w
 > - Antivirus deleted a file → restore it from quarantine (usually `Velo\_internal\pythonnet\runtime\Python.Runtime.dll`) and add the Velo folder as an exception
 > - Still blocked → right-click the `.zip` → **Properties** → tick **Unblock** → extract again
 
+## Velo 2.7.12
+
+- MIDI Output now sends your notes to a port that reaches other programs, like loopMIDI, instead of Windows' built-in synth. If your port isn't open, Velo tells you.
+- I tested it with PianoGlow's MIDI test on the web (pianoglow.com/test): Velo through loopMIDI showed "Your MIDI works!".
+
 ## Velo 2.7.11
 
 A fix for stream mode.
@@ -43,24 +48,12 @@ A fix for stream mode.
 
 Thanks streamproofer for reporting it, and for waiting!
 
-## Velo 2.7.10
-
-This one's all about the MIDI Hub.
-
-- New **All** library. One search goes through nanoMIDI, BitMidi, Online Sequencer and MuseScore at once, and it's what the Hub opens on now.
-- You can listen before you download. Hit ▶ on any song and a little player shows up at the bottom. If you like it, downloading keeps that same file.
-- Songs without a cover show the song itself now, drawn from its notes. The player bar too, so you can see where it gets busy before skipping there.
-- Online Sequencer search had been coming back empty for months. It works again.
-- MuseScore songs from our archive were quietly blocked for everyone. They're back, and they load fast.
-- The updater only installs Velo's own releases now, and checks the file before touching anything.
-
-The first time you search Online Sequencer or MuseScore, their window might flash for a second. That's them checking you're human, it goes away on its own.
-
 ## Earlier releases
 
 <details>
-<summary><b>What landed in v2.7.9 → v1.8</b></summary>
+<summary><b>What landed in v2.7.10 → v1.8</b></summary>
 
+- **v2.7.10** — the **All** library (one search, every library), listen before you download, covers drawn from the notes for songs without one, and Online Sequencer search works again.
 - **v2.7.9** — songs have **parts** (marks on the seek bar, guessed from the notes if the MIDI has none), **Fix mistakes** in Random Fail, wrong notes land next to the right key, and the sustain pedal comes back right away after jumping into a song. Fix mistakes was Sazuo's idea.
 - **v2.7.8** — **Keep playing** (the next song starts on its own, with the gap or overlap you pick) and a new Expression mode, **Bass**.
 - **v2.7.7** — the Queue can be sorted (A–Z, newest, oldest), each octave can get its own delay, and hotkeys stopped going back to default after an update. The octave delay was tiguju's idea.
